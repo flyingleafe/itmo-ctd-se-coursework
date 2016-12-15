@@ -31,10 +31,10 @@ import           Pipeline                     (MonadPipeline (..), MonadRunnable
                                                Pipe (..))
 
 class RunnableMode m => Preprocessing m where
-    getCollection :: (KnownNat w, KnownNat d) => TMConfig -> m (DocCollection w d)
+    getCollection :: KnownNat d => TMConfig -> m (DocCollection d)
 
-instance (KnownNat w, KnownNat d, Preprocessing m) =>
-         MonadPipeline TMConfig TMError IO () (DocCollection w d) m where
+instance (KnownNat d, Preprocessing m) =>
+         MonadPipeline TMConfig TMError IO () (DocCollection d) m where
     pipe = Pipe $ \(_, conf) -> runE conf $ getCollection @m conf
 
 newtype TextDirectoryParser a = TDParser
@@ -50,7 +50,7 @@ countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
 toSized :: KnownNat n => [a] -> VS.Vector n a
 toSized = fromJust . VS.fromList
 
-mergeCounts :: (KnownNat d, KnownNat w) => [M.Map T.Text Integer] -> DocCollection w d
+mergeCounts :: KnownNat d => [M.Map T.Text Integer] -> DocCollection d
 mergeCounts ms = toSized lists
     where lists = map listT ms
           listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
