@@ -9,17 +9,16 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 module Model
-  (
-  WordId
-, ModelScore(..)
-, SparseBOW(..)
-, DocCollection(..)
-, ModelParams(..)
-, ModelOutput(..)
-, Model(..)
-, MockModel(..)
-, mkStochastic
-) where
+       ( WordId
+       , ModelScore(..)
+       , SparseBOW(..)
+       , DocCollection(..)
+       , ModelParams(..)
+       , ModelOutput(..)
+       , Model(..)
+       , MockModel(..)
+       , mkStochastic
+       ) where
 
 import           Data.Default
 import qualified Data.Vector.Sized            as VS
@@ -30,10 +29,9 @@ import Universum hiding ((<>))
 type WordId = Int
 
 -- TODO: Move 10 into "integer type constants"
-data ModelScore t =
-    PerplexityScore [Double]
-  | forall s. (KnownNat t, KnownNat s, s <= 10) =>
-      TopWordsScore (VS.Vector t (VS.Vector s WordId))
+data ModelScore t = PerplexityScore [Double]
+                  | forall s. (KnownNat t, KnownNat s, s <= 10) =>
+                        TopWordsScore (VS.Vector t (VS.Vector s WordId))
 
 data SparseBOW t w = forall s. (KnownNat w, KnownNat s, s <= w) =>
     SBOW { unSBOW :: VS.Vector s (t, Integer) }
