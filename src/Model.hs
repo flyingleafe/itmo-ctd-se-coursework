@@ -33,13 +33,12 @@ data ModelScore t = PerplexityScore [Double]
                   | forall s. (KnownNat t, KnownNat s, s <= 10) =>
                         TopWordsScore (VS.Vector t (VS.Vector s WordId))
 
-data SparseBOW t w = forall s. (KnownNat w, KnownNat s, s <= w) =>
-    SBOW { unSBOW :: VS.Vector s (t, Integer) }
+data SparseBOW t = SBOW { unSBOW :: [(t, Integer)] }
 
-type DocCollection w d = VS.Vector d (SparseBOW WordId w)
+type DocCollection d = VS.Vector d (SparseBOW WordId)
 
 data ModelParams w t d = (KnownNat w, KnownNat t, KnownNat d) =>
-    MP { documents    :: DocCollection w d
+    MP { documents    :: DocCollection d
        , initialPhi   :: L w t
        , initialTheta :: L t d
        }

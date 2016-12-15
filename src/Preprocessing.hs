@@ -42,13 +42,19 @@ newtype TextDirectoryParser a = TDParser
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError, MonadRunnable r TMError IO)
 
-newtype AcidStateParser = ASParser Text -- String is a hole here
+data AcidStateParser = ASParser
 
-countTokens :: T.Text -> M.Map Text Integer
-countTokens = undefined . T.words
+countTokens :: T.Text -> M.Map T.Text Integer
+countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
 
-mergeCounts :: (KnownNat w, KnownNat d) => [M.Map Text Integer] -> DocCollection w d
-mergeCounts = undefined
+toSized :: KnownNat n => [a] -> VS.Vector n a
+toSized = fromJust . VS.fromList
+
+mergeCounts :: (KnownNat d, KnownNat w) => [M.Map T.Text Integer] -> DocCollection w d
+mergeCounts ms = toSized lists
+    where lists = map listT ms
+          listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
+          dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
 instance Preprocessing TextDirectoryParser where
     getCollection TMConfig {..} = do
