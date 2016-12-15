@@ -15,16 +15,20 @@ module Model
        , DocCollection(..)
        , ModelParams(..)
        , ModelOutput(..)
-       , Model(..)
        , MockModel(..)
        , mkStochastic
        ) where
 
+import Control.Arrow (arr)
 import           Data.Default
 import qualified Data.Vector.Sized            as VS
 import           GHC.TypeLits
 import           Numeric.LinearAlgebra.Static
 import Universum hiding ((<>))
+
+import Pipeline
+import Config
+import Constraints
 
 type WordId = Int
 
@@ -49,11 +53,20 @@ data ModelOutput w t d = (KnownNat w, KnownNat t, KnownNat d) =>
        , scores      :: [ModelScore t]
        }
 
-class Model a w t d where
-    buildTopicModel :: a -> ModelParams w t d -> ModelOutput w t d
+newtype MockModel a = MockModel
+    { getMockModel :: IO a
+    } deriving (Functor, Applicative, Monad, MonadIO)
 
-data MockModel = MockModel
-data EMModel = EMModel
+instance MonadRunnable TMConfig TMError IO MockModel where
+    runE _ = fmap Right . getMockModel
+
+instance MonadPipeline TMConfig TMError IO (ModelParams w t d) (ModelOutput w t d) MockModel where
+    pipe = arr buildModel
+      where buildModel MP{..} =
+                MO { outputPhi = initialPhi
+                   , outputTheta = initialTheta
+                   , scores = []
+                   }
 
 instance (KnownNat w, KnownNat t, KnownNat d) =>
     Default (ModelParams w t d) where
@@ -61,13 +74,6 @@ instance (KnownNat w, KnownNat t, KnownNat d) =>
              , initialPhi = mkStochastic 1
              , initialTheta = mkStochastic 2
              }
-
-instance Model MockModel w t d where
-    buildTopicModel _ MP{..} =
-        MO { outputPhi = initialPhi
-           , outputTheta = initialTheta
-           , scores = []
-           }
 
 mkStochastic :: forall m n. (KnownNat m, KnownNat n) => Seed -> L m n
 mkStochastic seed = m <> norms

@@ -5,11 +5,13 @@ module Constraints
        ( PipelineMode
        , RunnableMode
        , TMError
+       , ErrorTM
        ) where
 
+import           Control.Monad.Except (ExceptT)
 import           Universum
 
-import           Config    (TMConfig)
+import           Config               (TMConfig)
 import           Pipeline
 
 type TMError = Text
@@ -20,3 +22,5 @@ type PipelineMode inp outp m
     = ( RunnableMode m
       , MonadPipeline TMConfig TMError IO inp outp m
       )
+
+type ErrorTM = ExceptT TMError IO

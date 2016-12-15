@@ -37,7 +37,7 @@ instance (KnownNat d, DocSource m) =>
          MonadPipeline TMConfig TMError IO () (DocCollection d) m where
     pipe = Pipe $ \(_, conf) -> runE conf $ getCollection @m conf
 
-newtype TextDirectoryParser a = TDParser
+newtype TextDirectorySource a = TDSource
     { runTDParser :: ExceptT TMError IO a
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError, MonadRunnable r TMError IO)
@@ -54,7 +54,7 @@ mergeCounts ms = toSized lists
           listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
           dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
-instance DocSource TextDirectoryParser where
+instance DocSource TextDirectorySource where
     getCollection TMConfig {..} = do
         isOk <- liftIO $ isDirectory tmDocFilePath
         unless isOk $ throwError $
