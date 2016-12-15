@@ -8,6 +8,10 @@
 module Pipeline
        ( Pipe (..)
        , MonadPipeline (..)
+       , Source
+       , Sink
+       , Closed
+       , runSource
        ) where
 
 import           Control.Arrow
@@ -32,3 +36,10 @@ class Monad m => MonadPipeline r e m where
     type Output m :: *
 
     pipe :: Pipe r e (Input m) (Output m)
+
+type Source r e b = Pipe r e () b
+type Sink r e a = Pipe r e a ()
+type Closed r e = Pipe r e () ()
+
+runSource :: Source r e b -> r -> Either e b
+runSource s r = runPipe s ((), r)
