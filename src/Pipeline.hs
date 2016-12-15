@@ -14,7 +14,7 @@ module Pipeline
        , Sink
        , Closed
        , runSource
-       , pipeRunnable
+       , pipe
        ) where
 
 import           Control.Arrow
@@ -43,12 +43,12 @@ class (Monad base, Monad m) => MonadRunnable r e base m where
 
 class MonadRunnable r e base m =>
       MonadPipeline r e base inp outp m where
-    pipe :: Pipe r e base inp outp
+    pipeImpl :: inp -> r -> m outp
 
-pipeRunnable :: MonadPipeline r e base inp outp m
-             => (inp -> r -> m outp)
-             -> Pipe r e base inp outp
-pipeRunnable mf = Pipe $ \(a, r) -> runE r $ mf a r
+pipe :: forall r e base inp outp m. MonadPipeline r e base inp outp m
+     => Pipe r e base inp outp
+pipe = Pipe $ \(a, r) -> runE @r @e @base @m r $
+    pipeImpl @r @e @base @inp @outp @m a r
 
 type Source r e m b = Pipe r e m () b
 type Sink r e m a = Pipe r e m a ()

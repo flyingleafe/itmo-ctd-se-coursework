@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,7 +23,7 @@ class RunnableMode m => OutputSink m where
 
 instance OutputSink m =>
          MonadPipeline TMConfig TMError IO (ModelOutput w t d) () m where
-    pipe = pipeRunnable $ outputRes @m
+    pipeImpl = outputRes
 
 newtype MockSink a = MockSink
     { runMockSink :: ExceptT TMError IO a
@@ -30,3 +32,14 @@ newtype MockSink a = MockSink
 
 instance OutputSink MockSink where
     outputRes a _ = liftIO $ print a
+
+type OutputSinkMode m w t d
+    = ( SinkMode (ModelOutput w t d) m
+      , OutputSink m
+      )
+
+pipeOutputSink :: forall m w t d. OutputSinkMode m w t d
+               => Sink TMConfig TMError IO (ModelOutput w t d)
+pipeOutputSink = pipe @TMConfig @TMError @IO @(ModelOutput w t d) @() @m
+
+

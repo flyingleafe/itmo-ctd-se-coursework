@@ -1,9 +1,13 @@
+{-# LANGUAGE AllowAmbiguousTypes       #-}
+{-# LANGUAGE ConstraintKinds           #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
@@ -17,6 +21,7 @@ module Model
        , ModelOutput(..)
        , MockModel(..)
        , mkStochastic
+       , pipeModel
        ) where
 
 import           Control.Arrow                (arr)
@@ -66,13 +71,25 @@ newtype MockModel a = MockModel
 instance MonadRunnable TMConfig TMError IO MockModel where
     runE _ = fmap Right . getMockModel
 
-instance MonadPipeline TMConfig TMError IO (ModelParams w t d) (ModelOutput w t d) MockModel where
-    pipe = arr buildModel
+instance (KnownNat d, KnownNat w, KnownNat t) =>
+         MonadPipeline TMConfig TMError IO (DocCollection d) (ModelOutput w t d) MockModel where
+    pipeImpl inp r = return $ buildModel $ fuckThisSHIT inp
       where buildModel MP{..} =
                 MO { outputPhi = initialPhi
                    , outputTheta = initialTheta
                    , scores = []
                    }
+
+type ModelMode m w t d
+    = ( PipelineMode (DocCollection d) (ModelOutput w t d) m
+      , KnownNat d
+      , KnownNat w
+      , KnownNat t
+      )
+
+pipeModel :: forall m w t d. ModelMode m w t d
+          => Pipe TMConfig TMError IO (DocCollection d) (ModelOutput w t d)
+pipeModel = pipe @TMConfig @TMError @IO @(DocCollection d) @(ModelOutput w t d) @m
 
 instance (KnownNat w, KnownNat t, KnownNat d) =>
     Default (ModelParams w t d) where
@@ -80,6 +97,9 @@ instance (KnownNat w, KnownNat t, KnownNat d) =>
              , initialPhi = mkStochastic 1
              , initialTheta = mkStochastic 2
              }
+
+fuckThisSHIT :: (KnownNat t, KnownNat w, KnownNat d) => DocCollection d -> ModelParams w t d
+fuckThisSHIT = const def
 
 mkStochastic :: forall m n. (KnownNat m, KnownNat n) => Seed -> L m n
 mkStochastic seed = m <> norms
