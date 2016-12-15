@@ -1,7 +1,8 @@
 module Main where
 
-import Preprocessing
-import Model
+import           Model
+import           Preprocessing
+import           Universum
 
 main :: IO ()
 main = return ()

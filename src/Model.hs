@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 module Model
-(
+  (
   WordId
 , ModelScore(..)
 , SparseBOW(..)
@@ -25,6 +25,7 @@ import           Data.Default
 import qualified Data.Vector.Sized            as VS
 import           GHC.TypeLits
 import           Numeric.LinearAlgebra.Static
+import Universum hiding ((<>))
 
 type WordId = Int
 

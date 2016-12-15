@@ -6,6 +6,6 @@ in
      name = "coursework";
      ghc = hsPkgs.ghc;
      buildInputs =
-       [ zlib glib blas liblapack gfortran48 ];
+       [ zlib glib blas liblapack gfortran48 git ];
      LANG = "en_US.UTF-8";
   }
