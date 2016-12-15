@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import Preprocessing
+import Model
 
 main :: IO ()
-main = someFunc
+main = return ()
