@@ -19,12 +19,17 @@ library
   exposed-modules:     Preprocessing
                      , Model
                      , Pipeline
+                     , Config
+                     , Constraints
   build-depends:       base >= 4.7 && < 5
                      , hmatrix >= 0.18.0.0
                      , vector-sized >= 0.4.1.0
                      , data-default
+                     , formatting
                      , type-natural
                      , text
+                     , transformers
+                     , mtl
                      , system-filepath
                      , system-fileio
                      , directory

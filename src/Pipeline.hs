@@ -1,12 +1,14 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TupleSections          #-}
 
 module Pipeline
        ( Pipe (..)
+       , MonadRunnable (..)
        , MonadPipeline (..)
        , Source
        , Sink
@@ -15,31 +17,48 @@ module Pipeline
        ) where
 
 import           Control.Arrow
-import           Control.Category (Category (..))
-import           Universum        hiding ((.))
+import           Control.Category     (Category (..))
+import           Control.Monad.Except (ExceptT (..), runExceptT)
+import           Data.Proxy           (Proxy)
+import           Universum            hiding ((.))
 
-newtype Pipe r e a b = Pipe
-    { runPipe :: (a, r) -> Either e b
+newtype Pipe r e m a b = Pipe
+    { runPipe :: (a, r) -> m (Either e b)
     }
 
-instance Category (Pipe r e) where
+instance Monad m => Category (Pipe r e m) where
     Pipe f . Pipe g = Pipe $
-        \(a, r) -> g (a, r) >>= f . (, r)
-    id = Pipe $ pure . fst
+        \(a, r) -> runExceptT $ ExceptT (g (a, r)) >>= ExceptT . f . (, r)
+    id = Pipe $ pure . pure . fst
 
-instance Arrow (Pipe r e) where
-    arr f = Pipe $ pure . f . fst
-    first (Pipe f) = Pipe $ \((b, d), r) -> (, d) <$> f (b, r)
+instance Monad m => Arrow (Pipe r e m) where
+    arr f = Pipe $ pure . pure . f . fst
+    first (Pipe f) = Pipe $
+        \((b, d), r) -> fmap (, d) <$> f (b, r)
 
-class Monad m => MonadPipeline r e m where
-    type Input m :: *
-    type Output m :: *
+class (Monad base, Monad m) => MonadRunnable r e base m where
+    runE :: r -> m a -> base (Either e a)
+    -- liftE :: base (Either e a) -> m a
 
-    pipe :: Pipe r e (Input m) (Output m)
+class MonadRunnable r e base m =>
+      MonadPipeline r e base inp outp m where
+    pipe :: Pipe r e base inp outp
 
-type Source r e b = Pipe r e () b
-type Sink r e a = Pipe r e a ()
-type Closed r e = Pipe r e () ()
+pipeRunnable :: MonadPipeline r e base inp outp m
+             => (inp -> m outp)
+             -> Pipe r e base inp outp
+pipeRunnable mf = Pipe $ \(a, r) -> runE r $ mf a
 
-runSource :: Source r e b -> r -> Either e b
+type Source r e m b = Pipe r e m () b
+type Sink r e m a = Pipe r e m a ()
+type Closed r e m = Pipe r e m () ()
+
+runSource :: Source r e m b -> r -> m (Either e b)
 runSource s r = runPipe s ((), r)
+
+-- | Useful common instances
+instance Monad m => MonadRunnable r e m (ExceptT e m) where
+    runE _ (ExceptT m) = m
+
+-- instance MonadRunnable r e base m => MonadRunnable r e base (ExceptT e m) where
+    -- runE r (ExceptT m) =
