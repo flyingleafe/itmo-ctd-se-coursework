@@ -1,7 +1,7 @@
 module Main where
 
+import           DocSource
 import           Model
-import           Preprocessing
 import           Universum
 
 main :: IO ()

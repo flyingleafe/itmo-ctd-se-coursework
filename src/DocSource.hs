@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
 
-module Preprocessing where
+module DocSource where
 
 import           Control.Monad                (mapM, unless)
 import           Control.Monad.Except         (ExceptT, MonadError, runExceptT,
@@ -30,10 +30,10 @@ import           Model
 import           Pipeline                     (MonadPipeline (..), MonadRunnable (..),
                                                Pipe (..))
 
-class RunnableMode m => Preprocessing m where
+class RunnableMode m => DocSource m where
     getCollection :: KnownNat d => TMConfig -> m (DocCollection d)
 
-instance (KnownNat d, Preprocessing m) =>
+instance (KnownNat d, DocSource m) =>
          MonadPipeline TMConfig TMError IO () (DocCollection d) m where
     pipe = Pipe $ \(_, conf) -> runE conf $ getCollection @m conf
 
@@ -41,8 +41,6 @@ newtype TextDirectoryParser a = TDParser
     { runTDParser :: ExceptT TMError IO a
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError, MonadRunnable r TMError IO)
-
-data AcidStateParser = ASParser
 
 countTokens :: T.Text -> M.Map T.Text Integer
 countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
@@ -56,7 +54,7 @@ mergeCounts ms = toSized lists
           listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
           dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
-instance Preprocessing TextDirectoryParser where
+instance DocSource TextDirectoryParser where
     getCollection TMConfig {..} = do
         isOk <- liftIO $ isDirectory tmDocFilePath
         unless isOk $ throwError $
