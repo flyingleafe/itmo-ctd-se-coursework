@@ -28,14 +28,14 @@ import           Config                       (TMConfig (..))
 import           Constraints
 import           Model
 import           Pipeline                     (MonadPipeline (..), MonadRunnable (..),
-                                               Pipe (..))
+                                               Pipe (..), pipeRunnable)
 
 class RunnableMode m => DocSource m where
     getCollection :: KnownNat d => TMConfig -> m (DocCollection d)
 
 instance (KnownNat d, DocSource m) =>
          MonadPipeline TMConfig TMError IO () (DocCollection d) m where
-    pipe = Pipe $ \(_, conf) -> runE conf $ getCollection @m conf
+    pipe = pipeRunnable $ const $ getCollection @m
 
 newtype TextDirectorySource a = TDSource
     { runTDParser :: ExceptT TMError IO a

@@ -19,25 +19,27 @@ module Model
        , mkStochastic
        ) where
 
-import Control.Arrow (arr)
+import           Control.Arrow                (arr)
 import           Data.Default
 import qualified Data.Vector.Sized            as VS
 import           GHC.TypeLits
 import           Numeric.LinearAlgebra.Static
-import Universum hiding ((<>))
+import           Prelude                      (show)
+import           Universum                    hiding (show, (<>))
 
-import Pipeline
-import Config
-import Constraints
+import           Config
+import           Constraints
+import           Pipeline
 
 type WordId = Int
 
--- TODO: Move 10 into "integer type constants"
 data ModelScore t = PerplexityScore [Double]
-                  | forall s. (KnownNat t, KnownNat s, s <= 10) =>
-                        TopWordsScore (VS.Vector t (VS.Vector s WordId))
+                  | TopWordsScore (VS.Vector t [WordId])
+                  deriving (Show)
 
-data SparseBOW t = SBOW { unSBOW :: [(t, Integer)] }
+data SparseBOW t = SBOW
+    { unSBOW :: [(t, Integer)]
+    } deriving (Show)
 
 type DocCollection d = VS.Vector d (SparseBOW WordId)
 
@@ -52,6 +54,10 @@ data ModelOutput w t d = (KnownNat w, KnownNat t, KnownNat d) =>
        , outputTheta :: L t d
        , scores      :: [ModelScore t]
        }
+
+instance Show (ModelOutput w t d) where
+    show MO {..} = "phi: " ++ show outputPhi ++ ", theta: " ++
+                   show outputTheta ++ ", scores: " ++ show scores
 
 newtype MockModel a = MockModel
     { getMockModel :: IO a
