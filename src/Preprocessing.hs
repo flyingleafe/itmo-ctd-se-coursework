@@ -1,5 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Preprocessing where
 
@@ -16,19 +18,28 @@ import           Filesystem
 import qualified Data.Text as T
 import qualified Data.Map as M
 import           Control.Monad (mapM)
+import           Data.List (sort, foldl')
+import           Universum (ordNub)
+import           Data.Proxy
 
 class Preprocessing a where
-    getCollection :: (KnownNat w, KnownNat d) => a -> IO (Maybe (DocCollection w d))
+    getCollection :: KnownNat d => a -> IO (Maybe (DocCollection d))
 
 newtype TextDirectoryParser = TDParser FilePath
 
-newtype AcidStateParser = ASParser String -- String is a hole here
+data AcidStateParser = ASParser
 
 countTokens :: T.Text -> M.Map T.Text Integer
-countTokens = undefined . T.words
+countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
 
-mergeCounts :: (KnownNat w, KnownNat d) => [M.Map T.Text Integer] -> DocCollection w d
-mergeCounts = undefined
+toSized :: KnownNat n => [a] -> VS.Vector n a
+toSized = fromJust . VS.fromList
+
+mergeCounts :: forall d. KnownNat d => [M.Map T.Text Integer] -> DocCollection d
+mergeCounts ms = toSized lists
+    where lists = map listT ms
+          listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
+          dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
 instance Preprocessing TextDirectoryParser where
     getCollection (TDParser fp) = do
