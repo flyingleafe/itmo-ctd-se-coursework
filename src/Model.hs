@@ -1,21 +1,29 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
-module Model (WordId, ModelScore(..), SparseBOW(..), ModelParams(..), ModelOutput(..), Model(..), MockModel(..), mkStochastic) where
+module Model
+(
+  WordId
+, ModelScore(..)
+, SparseBOW(..)
+, ModelParams(..)
+, ModelOutput(..)
+, Model(..)
+, MockModel(..)
+, mkStochastic
+) where
 
-import Data.Default
-import Data.Proxy
-import GHC.TypeLits
-import Numeric.LinearAlgebra.Static
-import qualified Numeric.LinearAlgebra as LA
-import qualified Data.Vector.Sized as VS
+import           Data.Default
+import qualified Data.Vector.Sized            as VS
+import           GHC.TypeLits
+import           Numeric.LinearAlgebra.Static
 
 type WordId = Int
 
@@ -35,9 +43,9 @@ data ModelParams w t d = (KnownNat w, KnownNat t, KnownNat d) =>
        }
 
 data ModelOutput w t d = (KnownNat w, KnownNat t, KnownNat d) =>
-    MO { outputPhi    :: L w t
-       , outputTheta  :: L t d
-       , scores       :: [ModelScore t]
+    MO { outputPhi   :: L w t
+       , outputTheta :: L t d
+       , scores      :: [ModelScore t]
        }
 
 class Model a w t d where
