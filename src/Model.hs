@@ -13,6 +13,7 @@ module Model
   WordId
 , ModelScore(..)
 , SparseBOW(..)
+, DocCollection(..)
 , ModelParams(..)
 , ModelOutput(..)
 , Model(..)
@@ -33,11 +34,13 @@ data ModelScore t =
   | forall s. (KnownNat t, KnownNat s, s <= 10) =>
       TopWordsScore (VS.Vector t (VS.Vector s WordId))
 
-data SparseBOW w = forall s. (KnownNat w, KnownNat s, s <= w) =>
-    SBOW { unSBOW :: VS.Vector s (WordId, Integer) }
+data SparseBOW t w = forall s. (KnownNat w, KnownNat s, s <= w) =>
+    SBOW { unSBOW :: VS.Vector s (t, Integer) }
+
+type DocCollection w d = VS.Vector d (SparseBOW WordId w)
 
 data ModelParams w t d = (KnownNat w, KnownNat t, KnownNat d) =>
-    MP { documents    :: VS.Vector d (SparseBOW w)
+    MP { documents    :: DocCollection w d
        , initialPhi   :: L w t
        , initialTheta :: L t d
        }

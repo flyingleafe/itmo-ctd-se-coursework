@@ -6,6 +6,11 @@ extra-package-dbs: []
 packages:
 - '.'
 extra-deps:
-- vector-sized-0.4.1.0
+- equational-reasoning-0.4.1.1
+- ghc-typelits-natnormalise-0.4.6
+- ghc-typelits-presburger-0.1.1.0
 - hmatrix-0.18.0.0
+- monomorphic-0.0.3.3
+- type-natural-0.7.1.1
+- vector-sized-0.4.1.0
 resolver: lts-7.13
