@@ -5,22 +5,18 @@
 
 module Preprocessing where
 
-import           Prelude hiding (FilePath)
+import           Control.Monad                (mapM)
+import qualified Data.Map                     as M
+import           Data.Maybe                   (fromJust)
+import qualified Data.Text                    as T
 import           Data.Type.Natural
-import           GHC.TypeLits
 import qualified Data.Vector.Sized            as VS
-import           Numeric.LinearAlgebra.Static
-import           Data.Maybe (fromJust)
-import qualified Data.Text.IO as TIO
-import           Model
-import           Filesystem.Path
 import           Filesystem
-import qualified Data.Text as T
-import qualified Data.Map as M
-import           Control.Monad (mapM)
-import           Data.List (sort, foldl')
-import           Universum (ordNub)
-import           Data.Proxy
+import           Filesystem.Path              (FilePath, hasExtension)
+import           GHC.TypeLits
+import           Model
+import           Numeric.LinearAlgebra.Static
+import           Universum                    hiding (FilePath)
 
 class Preprocessing a where
     getCollection :: KnownNat d => a -> IO (Maybe (DocCollection d))
