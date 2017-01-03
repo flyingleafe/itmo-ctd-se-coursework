@@ -1,16 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-{-# LANGUAGE ConstraintKinds           #-}
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE RankNTypes                #-}
-{-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Model
        ( WordId
@@ -21,10 +9,11 @@ module Model
        , ModelOutput(..)
        , MockModel(..)
        , mkStochastic
-       , pipeModel
+       , runMockModel
        ) where
 
 import           Control.Arrow                (arr)
+import           Control.Monad.Identity       (Identity, runIdentity)
 import           Data.Default
 import qualified Data.Vector.Sized            as VS
 import           GHC.TypeLits
@@ -33,9 +22,9 @@ import           Prelude                      (show)
 import           Universum                    hiding (show, (<>))
 
 import           Config
-import           Constraints
-import           Pipeline
+import           Types
 
+-- | TODO: document all this types @tohnann
 type WordId = Int
 
 data ModelScore t = PerplexityScore [Double]
@@ -48,48 +37,22 @@ data SparseBOW t = SBOW
 
 type DocCollection d = VS.Vector d (SparseBOW WordId)
 
-data ModelParams w t d = (KnownNat w, KnownNat t, KnownNat d) =>
-    MP { documents    :: DocCollection d
-       , initialPhi   :: L w t
-       , initialTheta :: L t d
-       }
+data ModelParams w t d = MP
+    { documents    :: DocCollection d
+    , initialPhi   :: L w t
+    , initialTheta :: L t d
+    } deriving (Show)
 
-data ModelOutput w t d = (KnownNat w, KnownNat t, KnownNat d) =>
-    MO { outputPhi   :: L w t
-       , outputTheta :: L t d
-       , scores      :: [ModelScore t]
-       }
+data ModelOutput w t d = MO
+    { outputPhi   :: L w t
+    , outputTheta :: L t d
+    , scores      :: [ModelScore t]
+    } deriving (Show)
 
-instance Show (ModelOutput w t d) where
-    show MO {..} = "phi: " ++ show outputPhi ++ ", theta: " ++
-                   show outputTheta ++ ", scores: " ++ show scores
-
-newtype MockModel a = MockModel
-    { getMockModel :: IO a
-    } deriving (Functor, Applicative, Monad, MonadIO)
-
-instance MonadRunnable TMConfig TMError IO MockModel where
-    runE _ = fmap Right . getMockModel
-
-instance (KnownNat d, KnownNat w, KnownNat t) =>
-         MonadPipeline TMConfig TMError IO (DocCollection d) (ModelOutput w t d) MockModel where
-    pipeImpl inp r = return $ buildModel $ fuckThisSHIT inp
-      where buildModel MP{..} =
-                MO { outputPhi = initialPhi
-                   , outputTheta = initialTheta
-                   , scores = []
-                   }
-
-type ModelMode m w t d
-    = ( PipelineMode (DocCollection d) (ModelOutput w t d) m
-      , KnownNat d
-      , KnownNat w
-      , KnownNat t
-      )
-
-pipeModel :: forall m w t d. ModelMode m w t d
-          => Pipe TMConfig TMError IO (DocCollection d) (ModelOutput w t d)
-pipeModel = pipe @TMConfig @TMError @IO @(DocCollection d) @(ModelOutput w t d) @m
+mkStochastic :: forall m n. (KnownNat m, KnownNat n) => Seed -> L m n
+mkStochastic seed = m <> norms
+    where norms = diag $ vector $ map ((1/) . norm_1) $ toColumns m
+          m = uniformSample seed 0 1
 
 instance (KnownNat w, KnownNat t, KnownNat d) =>
     Default (ModelParams w t d) where
@@ -98,10 +61,33 @@ instance (KnownNat w, KnownNat t, KnownNat d) =>
              , initialTheta = mkStochastic 2
              }
 
-fuckThisSHIT :: (KnownNat t, KnownNat w, KnownNat d) => DocCollection d -> ModelParams w t d
-fuckThisSHIT = const def
+-- | Typeclass for models
+class Monad m => Model m where
+    prepareParams
+        :: (KnownNat t, KnownNat w, KnownNat d)
+        => DocCollection d -> m (ModelParams w t d)
+    buildModel
+        :: (KnownNat t, KnownNat w, KnownNat d)
+        => ModelParams w t d -> m (ModelOutput w t d)
+    runModel
+        :: (KnownNat t, KnownNat w, KnownNat d)
+        => DocCollection d -> m (ModelOutput w t d)
+    runModel = prepareParams >=> buildModel
 
-mkStochastic :: forall m n. (KnownNat m, KnownNat n) => Seed -> L m n
-mkStochastic seed = m <> norms
-    where norms = diag $ vector $ map ((1/) . norm_1) $ toColumns m
-          m = uniformSample seed 0 1
+-- | Dummy model for tests (generates constant output)
+newtype MockModel a = MockModel
+    { getMockModel :: Identity a
+    } deriving (Functor, Applicative, Monad)
+
+instance Model MockModel where
+    prepareParams = return . const def
+    buildModel MP{..} = return $
+        MO { outputPhi = initialPhi
+           , outputTheta = initialTheta
+           , scores = []
+           }
+
+runMockModel
+    :: (KnownNat t, KnownNat w, KnownNat d)
+    => DocCollection d -> Base TMError (ModelOutput w t d)
+runMockModel = return . runIdentity . getMockModel . runModel

@@ -1,14 +1,6 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
-
-module DocSource where
+module DocSource
+       ( runTDSource
+       ) where
 
 import           Control.Monad                (mapM, unless)
 import           Control.Monad.Except         (ExceptT, MonadError, runExceptT,
@@ -28,30 +20,13 @@ import           Prelude                      (show)
 import           Universum                    hiding (FilePath, show)
 
 import           Config                       (TMConfig (..))
-import           Constraints
 import           Model
-import           Pipeline
-
-class RunnableMode m => DocSource m where
-    getCollection :: KnownNat d => TMConfig -> m (DocCollection d)
-
-instance (KnownNat d, DocSource m) =>
-         MonadPipeline TMConfig TMError IO () (DocCollection d) m where
-    pipeImpl = const getCollection
-
-type DocSourceMode m
-    = ( SourceMode (forall d. KnownNat d => DocCollection d) IO
-      , DocSource m
-      )
-
-pipeDocSource :: forall m d. DocSourceMode m d
-              => Source TMConfig TMError IO (DocCollection d)
-pipeDocSource = pipe @TMConfig @TMError @IO @() @(DocCollection d) @m
+import           Types
 
 newtype TextDirectorySource a = TDSource
-    { runTDParser :: ExceptT TMError IO a
+    { getTDSource :: Base TMError a
     } deriving (Functor, Applicative, Monad, MonadIO,
-                MonadError TMError, MonadRunnable r TMError IO)
+                MonadError TMError)
 
 countTokens :: T.Text -> M.Map T.Text Integer
 countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
@@ -65,13 +40,16 @@ mergeCounts ms = toSized lists
           listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
           dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
-instance DocSource TextDirectorySource where
-    getCollection TMConfig {..} = do
-        isOk <- liftIO $ isDirectory tmDocFilePath
-        unless isOk $ throwError $
-            sformat ("No directory on path "%shown) tmDocFilePath
+getTDCollection :: KnownNat d => FilePath -> TextDirectorySource (DocCollection d)
+getTDCollection fp = do
+    isOk <- liftIO $ isDirectory fp
+    unless isOk $ throwError $
+        sformat ("No directory on path "%shown) fp
 
-        docFilePaths <- filter (`hasExtension` "txt") <$>
-                        liftIO (listDirectory tmDocFilePath)
-        counts <- mapM (fmap countTokens <$> liftIO . readTextFile) docFilePaths
-        return $ mergeCounts counts
+    docFilePaths <- filter (`hasExtension` "txt") <$>
+                    liftIO (listDirectory fp)
+    counts <- mapM (fmap countTokens <$> liftIO . readTextFile) docFilePaths
+    return $ mergeCounts counts
+
+runTDSource :: KnownNat d => FilePath -> Base TMError (DocCollection d)
+runTDSource = getTDSource . getTDCollection
