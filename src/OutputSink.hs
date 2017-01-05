@@ -15,7 +15,5 @@ newtype MockSink a = MockSink
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError)
 
-runMockSink
-    :: (KnownNat t, KnownNat w, KnownNat d)
-    => ModelOutput w t d -> Base TMError ()
+runMockSink :: ModelOutput -> Base TMError ()
 runMockSink = getMockSink . liftIO . print

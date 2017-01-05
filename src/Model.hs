@@ -17,7 +17,8 @@ import           Control.Monad.Identity       (Identity, runIdentity)
 import           Data.Default
 import qualified Data.Vector.Sized            as VS
 import           GHC.TypeLits
-import           Numeric.LinearAlgebra.Static
+import           Numeric.LinearAlgebra
+import           Numeric.LinearAlgebra.Data
 import           Prelude                      (show)
 import           Universum                    hiding (show, (<>))
 
@@ -27,67 +28,67 @@ import           Types
 -- | TODO: document all this types @tohnann
 type WordId = Int
 
-data ModelScore t = PerplexityScore [Double]
-                  | TopWordsScore (VS.Vector t [WordId])
+-- | Score of ARTM model.
+data ModelScore = PerplexityScore [Double]
+                | TopWordsScore [WordId]
                   deriving (Show)
 
+-- | Sparse Bag Of Words (BOW), used for efficiently
+-- | storing rows of sparse integer matrices.
 data SparseBOW t = SBOW
     { unSBOW :: [(t, Integer)]
     } deriving (Show)
 
-type DocCollection d = VS.Vector d (SparseBOW WordId)
+-- | |W|*|D|-sized matrix containing amounts of words per document.
+type DocCollection = [SparseBOW WordId]
 
-data ModelParams w t d = MP
-    { documents    :: DocCollection d
-    , initialPhi   :: L w t
-    , initialTheta :: L t d
+-- | Initial parameters of ARTM model.
+data ModelParams = MP
+    { documents    :: DocCollection
+    , initialPhi   :: Matrix R
+    , initialTheta :: Matrix R
     } deriving (Show)
 
-data ModelOutput w t d = MO
-    { outputPhi   :: L w t
-    , outputTheta :: L t d
-    , scores      :: [ModelScore t]
+-- | Output of ARTM model.
+data ModelOutput = MO
+    { outputPhi   :: Matrix R
+    , outputTheta :: Matrix R
+    , scores      :: [ModelScore]
     } deriving (Show)
 
-mkStochastic :: forall m n. (KnownNat m, KnownNat n) => Seed -> L m n
-mkStochastic seed = m <> norms
+mkStochastic :: Seed -> Int -> Int -> Matrix R
+mkStochastic seed rows cols = m <> norms
     where norms = diag $ vector $ map ((1/) . norm_1) $ toColumns m
-          m = uniformSample seed 0 1
+          m = uniformSample seed rows (replicate cols (0, 1))
 
-instance (KnownNat w, KnownNat t, KnownNat d) =>
-    Default (ModelParams w t d) where
+instance Default ModelParams where
     def = MP { documents = undefined
-             , initialPhi = mkStochastic 1
-             , initialTheta = mkStochastic 2
+             , initialPhi = mkStochastic 1 100 20
+             , initialTheta = mkStochastic 2 20 500
              }
 
--- | Typeclass for models
+-- | Typeclass for ARTM models.
 class Monad m => Model m where
     prepareParams
-        :: (KnownNat t, KnownNat w, KnownNat d)
-        => DocCollection d -> m (ModelParams w t d)
+        :: DocCollection -> m ModelParams
     buildModel
-        :: (KnownNat t, KnownNat w, KnownNat d)
-        => ModelParams w t d -> m (ModelOutput w t d)
+        :: ModelParams -> m ModelOutput
     runModel
-        :: (KnownNat t, KnownNat w, KnownNat d)
-        => DocCollection d -> m (ModelOutput w t d)
+        :: DocCollection -> m ModelOutput
     runModel = prepareParams >=> buildModel
 
--- | Dummy model for tests (generates constant output)
+-- | Dummy model for tests (generates constant output).
 newtype MockModel a = MockModel
     { getMockModel :: Identity a
     } deriving (Functor, Applicative, Monad)
 
 instance Model MockModel where
     prepareParams = return . const def
-    buildModel MP{..} = return $
+    buildModel MP{..} = return
         MO { outputPhi = initialPhi
            , outputTheta = initialTheta
            , scores = []
            }
 
-runMockModel
-    :: (KnownNat t, KnownNat w, KnownNat d)
-    => DocCollection d -> Base TMError (ModelOutput w t d)
+runMockModel :: DocCollection -> Base TMError ModelOutput
 runMockModel = return . runIdentity . getMockModel . runModel

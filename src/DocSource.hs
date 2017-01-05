@@ -10,12 +10,11 @@ import           Data.Maybe                   (fromJust)
 import           Data.Proxy                   (Proxy (..))
 import qualified Data.Text                    as T
 import           Data.Type.Natural
-import qualified Data.Vector.Sized            as VS
 import           Filesystem
 import           Filesystem.Path              (FilePath, hasExtension)
 import           Formatting                   (sformat, shown, stext, (%))
 import           GHC.TypeLits
-import           Numeric.LinearAlgebra.Static
+import           Numeric.LinearAlgebra.Data
 import           Prelude                      (show)
 import           Universum                    hiding (FilePath, show)
 
@@ -31,16 +30,12 @@ newtype TextDirectorySource a = TDSource
 countTokens :: T.Text -> M.Map T.Text Integer
 countTokens = foldl' (\m w -> M.insertWith (+) w 1 m) M.empty . T.words
 
-toSized :: KnownNat n => [a] -> VS.Vector n a
-toSized = fromJust . VS.fromList
-
-mergeCounts :: KnownNat d => [M.Map T.Text Integer] -> DocCollection d
-mergeCounts ms = toSized lists
-    where lists = map listT ms
-          listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
+mergeCounts :: [M.Map T.Text Integer] -> DocCollection
+mergeCounts ms = map listT ms
+    where listT m = SBOW $ M.toList $ M.mapKeys (dict M.!) m
           dict = M.fromAscList $ (`zip` [1..]) $ M.keys $ M.unionsWith (+) ms
 
-getTDCollection :: KnownNat d => FilePath -> TextDirectorySource (DocCollection d)
+getTDCollection :: FilePath -> TextDirectorySource DocCollection
 getTDCollection fp = do
     isOk <- liftIO $ isDirectory fp
     unless isOk $ throwError $
@@ -51,5 +46,5 @@ getTDCollection fp = do
     counts <- mapM (fmap countTokens <$> liftIO . readTextFile) docFilePaths
     return $ mergeCounts counts
 
-runTDSource :: KnownNat d => FilePath -> Base TMError (DocCollection d)
+runTDSource :: FilePath -> Base TMError DocCollection
 runTDSource = getTDSource . getTDCollection
