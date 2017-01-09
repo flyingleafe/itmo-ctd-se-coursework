@@ -2,7 +2,8 @@
 {-# LANGUAGE TypeFamilies          #-}
 
 module Model
-       (ModelOutput) where
+       ( ModelOutput
+       ) where
 
 import           Universum
 

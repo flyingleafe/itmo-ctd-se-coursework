@@ -17,7 +17,7 @@ import           Config                   (TMConfig (..))
 import           Types
 
 newtype TextDirectorySource a = TDSource
-    { getTDSource :: Base TMError a
+    { getTDSource :: Base a
     } deriving (Functor, Applicative, Monad, MonadIO)
 
 type DocCollection = [[Text]]
@@ -41,5 +41,5 @@ tfIdfVectorize dic = map docVectorize dic where
     terms = keys (corpTermCounts corpus)
     corpus = mkCorpus dic
 
-runTDSource :: FilePath -> Base TMError TfIdfCollection
+runTDSource :: FilePath -> Base TfIdfCollection
 runTDSource = fmap tfIdfVectorize . getTDSource . getTDCollection

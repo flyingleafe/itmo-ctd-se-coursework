@@ -11,9 +11,9 @@ import           Model                (ModelOutput (..))
 import           Types
 
 newtype MockSink a = MockSink
-    { getMockSink :: Base TMError a
+    { getMockSink :: Base a
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError)
 
-runMockSink :: ModelOutput -> Base TMError ()
+runMockSink :: ModelOutput -> Base ()
 runMockSink = getMockSink . liftIO . print

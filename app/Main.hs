@@ -1,6 +1,7 @@
 module Main where
 
-import           Data.String (fromString)
+import           Data.Default (def)
+import           Data.String  (fromString)
 import           Universum
 
 import           DocSource
@@ -12,7 +13,7 @@ main :: IO ()
 main = do
     (path:_) <- getArgs
     let fp = fromString path
-    res <- runBase $ runTDSource fp -- >>= runMockModel >>= runMockSink
+    res <- runBase def $ runTDSource fp -- >>= runMockModel >>= runMockSink
     case res of
         Left err -> putText $ "Error: " <> err
         Right _  -> putText "Finished!"

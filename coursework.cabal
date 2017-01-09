@@ -33,6 +33,7 @@ library
                      , transformers
                      , mtl
                      , filepath
+                     , stm
                      , system-filepath
                      , system-fileio
                      , directory
@@ -62,6 +63,7 @@ executable coursework-exe
   build-depends:       base
                      , coursework
                      , universum >= 0.1.11
+                     , data-default
   default-language:    Haskell2010
   default-extensions:  DeriveDataTypeable
                        DeriveGeneric
