@@ -11,8 +11,8 @@ module Model
        ) where
 
 import           Control.Concurrent.STM.TVar (readTVar, writeTVar)
+import           Control.Lens                (use, (%=))
 import           Control.Monad.State         (MonadState (..))
-import           Control.Monad.State         (get, put)
 import qualified Data.Map                    as M
 import           Universum
 
@@ -95,10 +95,9 @@ instance Model Base KMeansParams where
     prepareParams nClusters mx = return params where
         params = KMeans (take nClusters mx) mx cosine
     buildModel p@KMeans{..} = do
-      pd@ProcessData{..} <- get
       let p1 = innerClusterDist metric clusters centroids points
       let p2 = outerCentersDist metric centroids
-      put $ pd { metrics = [p1, p2] : metrics }
+      metrics %= ([p1, p2] :)
       if converged
       then return (p, clusters)
       else buildModel $ KMeans (M.keys newCentroidsMap) points metric
