@@ -17,6 +17,7 @@ import           Control.Exception                    (ioError)
 import qualified Control.Monad.Catch                  as Catch
 import           Control.Monad.Except                 (MonadError (throwError))
 import           Control.Monad.State                  (get)
+import           Formatting                           (int, sformat, (%))
 import           Network.Wai                          (Application)
 import           Network.Wai.Handler.Warp             (run)
 import           Network.Wai.Middleware.RequestLogger (logStdoutDev)
@@ -28,10 +29,7 @@ import           System.IO.Error                      (userError)
 import           Universum
 
 import           Config                               (TMConfig)
-import           Types                                (Base, ProcessData, TMError,
-                                                       TVarStateT (..), WorkMode,
-                                                       runBaseRaw)
-
+import           Types
 import           Web.Api                              (AppApi, appApi)
 import           Web.Types                            ()
 
@@ -46,7 +44,9 @@ webApp nat = flip enter apiHandlers <$> nat >>= return . serve appApi
 
 -- | Run the whole thing
 webServer :: Word16 -> Base ()
-webServer = serveImpl $ webApp nat
+webServer port = do
+    putText $ sformat ("Starting server on port "%int) port
+    serveImpl (webApp nat) port
 
 -----------------------------------------------------------------------
 -- Handler transformation
@@ -81,4 +81,4 @@ apiHandlers :: WorkMode m => ServerT AppApi m
 apiHandlers = initialize :<|> get
 
 initialize :: WorkMode m => TMConfig -> m ()
-initialize _ = pure ()
+initialize TMConfig{..} = pure ()

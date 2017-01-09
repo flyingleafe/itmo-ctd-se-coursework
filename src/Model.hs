@@ -1,8 +1,8 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE FlexibleContexts      #-}
 
 module Model
        ( ModelOutput
@@ -71,8 +71,8 @@ clusterize r centroids = map assignPoint where
 
 -- | K-Means model intermediate parameters.
 data KMeansParams = KMeans { centroids :: [Point]
-                           , points :: TfIdfCollection
-                           , metric :: Point -> Point -> Double
+                           , points    :: TfIdfCollection
+                           , metric    :: Point -> Point -> Double
                            }
 
 -- | K-Means model implementation.
