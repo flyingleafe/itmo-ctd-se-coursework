@@ -12,7 +12,7 @@ main :: IO ()
 main = do
     (path:_) <- getArgs
     let fp = fromString path
-    res <- runBase $ runTDSource fp >>= runMockModel >>= runMockSink
+    res <- runBase $ runTDSource fp -- >>= runMockModel >>= runMockSink
     case res of
         Left err -> putText $ "Error: " <> err
         Right _  -> putText "Finished!"
