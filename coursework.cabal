@@ -21,7 +21,6 @@ library
                      , Types
                      , Config
                      , OutputSink
-                     , NLP
                      , Web.Api
                      , Web.Server
   build-depends:       base >= 4.7 && < 5
