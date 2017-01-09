@@ -13,6 +13,7 @@ module Model
 import qualified Data.Map as M
 import           Control.Concurrent.STM.TVar (writeTVar, readTVar)
 import           Universum
+import Control.Monad.State (get, put)
 
 import           Config
 import           DocSource (TfIdfCollection)
@@ -76,20 +77,31 @@ data KMeansParams = KMeans { centroids :: [Point]
                            , metric    :: Point -> Point -> Double
                            }
 
+-- | Inner cluster distance quality metric.
+innerClusterDist :: (Point -> Point -> Double) -> [Int] -> [Point] -> [Point] -> Double
+innerClusterDist r ys centrs pts =
+    sum $ map (\(y, c, p) -> r c p ** 2 / fromIntegral (cnt y)) (zip3 ys centrs pts)
+    where cnt y = length $ filter (y ==) ys
+
+-- | outer cluster (centroids) distance quality metric.
+outerCentersDist :: (Point -> Point -> Double) -> [Point] -> Double
+outerCentersDist r centrs = coeff * sum (concatMap (\x -> map (r x) centrs) centrs)
+    where n = length centrs
+          coeff = 2 / fromIntegral n / fromIntegral (n - 1)
+
 -- | K-Means model implementation.
 instance Model Base KMeansParams where
     prepareParams nClusters mx = return params where
         params = KMeans (take nClusters mx) mx cosine
     buildModel p@KMeans{..} = do
-      let p1 = 0
-      let p2 = 0
-      liftIO $ atomically $ undefined {-do
-        tv <- liftIO ask
-        pd@ProcessData{..} <- readTVar tv
-        writeTVar tv (pd { metrics = [p1, p2] : metrics })-}
+      pd@ProcessData{..} <- get
+      let p1 = innerClusterDist metric clusters centroids points
+      let p2 = outerCentersDist metric centroids
+      put $ pd { metrics = [p1, p2] : metrics }
       if converged
-      then return (p, clusterize metric centroids points)
+      then return (p, clusters)
       else buildModel $ KMeans (M.keys newCentroidsMap) points metric
         where converged = all (< 0.00001) $
                 zipWith metric (sort centroids) (M.keys newCentroidsMap)
               newCentroidsMap = relocate (assign metric centroids points)
+              clusters = clusterize metric centroids points
