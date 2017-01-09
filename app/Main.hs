@@ -41,7 +41,7 @@ appModeInfo = info (helper <*> appModeParser) $
     fullDesc `mappend` progDesc "Server part of document-clustering application"
 
 pipeline :: FilePath -> Base ()
-pipeline fp = () <$ runTDSource fp  -- >=> runMockModel >=> runMockSink
+pipeline = runTDSource >=> runModel @Base @KMeansParams 2 >=> runMockSink . snd
 
 main :: IO ()
 main = do
