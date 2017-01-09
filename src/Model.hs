@@ -6,9 +6,11 @@
 
 module Model
        ( ModelOutput
+       , Model (..)
        ) where
 
 import qualified Data.Map as M
+import           Control.Concurrent.STM.TVar (writeTVar, readTVar)
 import           Universum
 
 import           Config
@@ -49,10 +51,10 @@ dist :: Point -> Point -> Double
 dist a b = sqrt $ sum $ map (^2) $ zipWith (-) a b
 
 -- | Assign points to closest centroids.
-assign :: [Point] -> [Point] -> M.Map Point [Point]
-assign centroids points = M.fromListWith (++)
+assign :: (Point -> Point -> Double) -> [Point] -> [Point] -> M.Map Point [Point]
+assign r centroids points = M.fromListWith (++)
                           [(assignPoint p, [p]) | p <- points]
-  where assignPoint p = minimumBy (comparing (dist p)) centroids
+  where assignPoint p = minimumBy (comparing (r p)) centroids
 
 -- | Relocate centroids to the middle of its group/
 relocate :: M.Map Point [Point] -> M.Map Point [Point]
@@ -74,13 +76,19 @@ data KMeansParams = KMeans { centroids :: [Point]
                            }
 
 -- | K-Means model implementation.
-instance Model (Base TMError) KMeansParams where
+instance Model Base KMeansParams where
     prepareParams nClusters mx = return params where
         params = KMeans (take nClusters mx) mx cosine
-    buildModel p@KMeans{..} =
+    buildModel p@KMeans{..} = do
+      let p1 = 0
+      let p2 = 0
+      liftIO $ atomically $ undefined {-do
+        tv <- liftIO ask
+        pd@ProcessData{..} <- readTVar tv
+        writeTVar tv (pd { metrics = [p1, p2] : metrics })-}
       if converged
       then return (p, clusterize metric centroids points)
       else buildModel $ KMeans (M.keys newCentroidsMap) points metric
         where converged = all (< 0.00001) $
-                zipWith dist (sort centroids) (M.keys newCentroidsMap)
-              newCentroidsMap = relocate (assign centroids points)
+                zipWith metric (sort centroids) (M.keys newCentroidsMap)
+              newCentroidsMap = relocate (assign metric centroids points)
