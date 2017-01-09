@@ -1,14 +1,14 @@
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE FlexibleContexts      #-}
 
 module Model
        ( ModelOutput
        ) where
 
-import qualified Data.Map as M
+import qualified Data.Map  as M
 import           Universum
 
 import           Config
@@ -69,12 +69,12 @@ clusterize r centroids = map assignPoint where
 
 -- | K-Means model intermediate parameters.
 data KMeansParams = KMeans { centroids :: [Point]
-                           , points :: TfIdfCollection
-                           , metric :: Point -> Point -> Double
+                           , points    :: TfIdfCollection
+                           , metric    :: Point -> Point -> Double
                            }
 
 -- | K-Means model implementation.
-instance Model (Base TMError) KMeansParams where
+instance Model Base KMeansParams where
     prepareParams nClusters mx = return params where
         params = KMeans (take nClusters mx) mx cosine
     buildModel p@KMeans{..} =
