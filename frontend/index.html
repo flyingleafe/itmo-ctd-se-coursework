@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Photon</title>
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" href="css/photon.min.css">
+        <!-- JS -->
+        <script type="text/javascript" src="js/main.js"></script>
+        <style>
+         .pane {
+             padding: 10px;
+         }
+         .hidden {
+             display: none;
+         }
+        </style>
+    </head>
+    <body>
+        <div class="window">
+
+            <!-- .toolbar-header sits at the top of your app -->
+            <header class="toolbar toolbar-header">
+                <h1 class="title">Document clusterization</h1>
+            </header>
+
+            <!-- Your app's content goes inside .window-content -->
+            <div class="window-content">
+                <div class="pane-group">
+                    <div class="pane pane-sm sidebar">
+                        <nav class="nav-group">
+                            <h5 class="nav-group-title">Actions</h5>
+                            <span class="nav-group-item active" id="menu-select-files">
+                                <span class="icon icon-light-up"></span>
+                                Select files
+                            </span>
+                            <span class="nav-group-item" id="menu-graphs">
+                                <span class="icon icon-light-up"></span>
+                                Graphs
+                            </span>
+                        </nav>
+                    </div>
+
+                    <div class="pane" id="pane-container">
+                        <div id="pane-select-files">
+                            <form>
+                                <div class="form-group">
+                                    <label for="files">Select directory with documents</label>
+                                    <input id="filepicker" class="form-control" name="files" type="file" webkitdirectory />
+                                </div>
+                                <table class="table-striped hidden" id="files-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Path</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                                <div class="form-group">
+                                    <input id="file-submit" type="submit" class="form-control" value="Run model" disabled />
+                                </div>
+                            </form>
+                        </div>
+                        <div id="pane-graphs" class="hidden">Graphs!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

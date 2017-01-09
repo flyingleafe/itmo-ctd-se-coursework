@@ -5,7 +5,8 @@
 {-# LANGUAGE FlexibleContexts      #-}
 
 module Model
-       (ModelOutput) where
+       ( ModelOutput
+       ) where
 
 import qualified Data.Map as M
 import           Universum

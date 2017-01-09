@@ -9,11 +9,16 @@ module Web.Api
        ) where
 
 import           Data.Proxy  (Proxy (Proxy))
-import           Servant.API ((:<|>), (:>), Capture, Get, JSON, Post, QueryParam)
+import           Servant.API ((:<|>), (:>), Capture, Get, JSON, Post, QueryParam, ReqBody)
 import           Universum
 
+import           Config
+import           Types       (ProcessData)
+
 type AppApi =
-    "ping" :> Get '[JSON] ()
+    "initialize" :> ReqBody '[JSON] TMConfig :> Post '[JSON] ()
+    :<|>
+    "get_state" :> Get '[JSON] ProcessData
 
 appApi :: Proxy AppApi
 appApi = Proxy
