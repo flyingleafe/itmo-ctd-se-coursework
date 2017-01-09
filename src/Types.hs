@@ -1,3 +1,5 @@
+{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -7,7 +9,9 @@ module Types
        , TMError
        , AppState (..)
        , ProcessData (..)
+       , WorkMode
        , runBase
+       , runBaseRaw
        ) where
 
 import           Control.Concurrent.STM    (TVar, newTVar, readTVar, writeTVar)
@@ -55,4 +59,14 @@ type Base = TVarStateT ProcessData (ExceptT TMError IO)
 runBase :: ProcessData -> Base a -> IO (Either TMError a)
 runBase pd action = do
     tv <- atomically $ newTVar pd
-    runExceptT $ flip runReaderT tv $ getTVarStateT action
+    runBaseRaw tv action
+
+runBaseRaw :: TVar ProcessData -> Base a -> IO (Either TMError a)
+runBaseRaw tv action = runExceptT $ flip runReaderT tv $ getTVarStateT action
+
+-- | WorkMode constraint
+type WorkMode m =
+    ( MonadIO m
+    , MonadError TMError m
+    , MonadState ProcessData m
+    )

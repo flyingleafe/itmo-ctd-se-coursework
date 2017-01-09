@@ -23,10 +23,12 @@ library
                      , OutputSink
                      , Web.Api
                      , Web.Server
-  build-depends:       base >= 4.7 && < 5
-                     , hmatrix >= 0.18.0.0
+                     , Web.Types
+  build-depends:       aeson
+                     , base >= 4.7 && < 5
                      , vector-sized >= 0.4.1.0
                      , data-default
+                     , exceptions >= 0.8
                      , formatting
                      , type-natural
                      , text
