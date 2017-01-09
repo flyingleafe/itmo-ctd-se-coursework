@@ -47,11 +47,11 @@ instance Default AppState where
 -- | Application processing data
 data ProcessData = ProcessData
     { appState :: AppState
-    , dummy    :: Int
+    , metrics  :: [[Double]]
     }
 
 instance Default ProcessData where
-    def = ProcessData def 0
+    def = ProcessData def []
 
 type TMError = Text
 type Base = TVarStateT ProcessData (ExceptT TMError IO)
