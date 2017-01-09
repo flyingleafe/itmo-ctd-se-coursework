@@ -28,7 +28,7 @@ import           Servant.Utils.Enter                  ((:~>) (Nat), enter)
 import           System.IO.Error                      (userError)
 import           Universum
 
-import           Config                               (TMConfig)
+import           Config                               (TMConfig (..))
 import           Types
 import           Web.Api                              (AppApi, appApi)
 import           Web.Types                            ()
