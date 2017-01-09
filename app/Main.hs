@@ -47,7 +47,7 @@ main :: IO ()
 main = do
     mode <- execParser appModeInfo
     res <- runBase def $ case mode of
-        CLIMode path    -> pipeline path
+        CLIMode path    -> putText "Running CLI mode" >> pipeline path
         ServerMode port -> webServer port
     case res of
         Right _  -> putText "Finished!"
