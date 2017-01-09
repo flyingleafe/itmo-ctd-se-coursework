@@ -13,7 +13,7 @@ module Web.Server
        ) where
 
 import           Control.Concurrent.STM               (TVar)
-import           Control.Lens                         (use, (.=))
+import           Control.Lens                         (use, (.=), (^.))
 import qualified Control.Monad.Catch                  as Catch
 import           Control.Monad.Except                 (MonadError (throwError))
 import           Control.Monad.State                  (get)
@@ -82,7 +82,7 @@ nat = do
 -----------------------------------------------------------------------
 
 apiHandlers :: ServerT AppApi Base
-apiHandlers = initialize :<|> get
+apiHandlers = initialize :<|> getState
 
 initialize :: TMConfig -> Base ()
 initialize TMConfig{..} = do
@@ -92,6 +92,12 @@ initialize TMConfig{..} = do
     appState .= Processing
     -- | Start working thread
     fork_ $ pipeline tmDocFilePath
+
+getState :: Base ProcessData
+getState = do
+    pd <- get
+    traceShowM $ pd ^. appState
+    return pd
 
 -----------------------------------------------------------------------
 -- Helpers

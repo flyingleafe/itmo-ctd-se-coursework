@@ -35,6 +35,8 @@ newtype TVarStateT s m a = TVarStateT
                 MonadIO, MonadThrow, MonadCatch, MonadMask, MonadFail)
 
 instance MonadIO m => MonadState s (TVarStateT s m) where
+    get = TVarStateT ask >>= atomically . readTVar
+    put s = TVarStateT ask >>= atomically . flip writeTVar s
     state f = TVarStateT ask >>= atomically . tx
       where tx tv = do
                 s <- readTVar tv
@@ -53,8 +55,8 @@ instance Default AppState where
 
 -- | Application processing data
 data ProcessData = ProcessData
-    { _appState :: AppState
-    , _metrics  :: [[Double]]
+    { _appState :: !AppState
+    , _metrics  :: ![[Double]]
     } deriving (Eq, Show)
 
 makeLenses ''ProcessData

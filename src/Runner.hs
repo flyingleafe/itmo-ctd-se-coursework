@@ -30,7 +30,7 @@ class Monad m => MonadFork m where
     fork :: m () -> m (TId m)
 
 fork_ :: MonadFork m => m () -> m ()
-fork_ action = () <$ fork_ action
+fork_ action = () <$ fork action
 
 -- | Straightforward IO instance
 instance MonadFork IO where

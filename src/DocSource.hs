@@ -28,7 +28,7 @@ preprocess = words
 
 getTDCollection :: FilePath -> TextDirectorySource DocCollection
 getTDCollection = fmap (map preprocess) . (mapM readFile =<<) . liftIO . getDirRec
-    where
+  where
     getDirRec fp = do
         isDir <- doesDirectoryExist fp
         if isDir
@@ -36,7 +36,8 @@ getTDCollection = fmap (map preprocess) . (mapM readFile =<<) . liftIO . getDirR
         else return [fp]
 
 tfIdfVectorize :: DocCollection -> TfIdfCollection
-tfIdfVectorize dic = map docVectorize dic where
+tfIdfVectorize dic = map docVectorize dic
+  where
     docVectorize doc = map (\w -> tf_idf w (mkDocument doc) corpus) terms
     terms = keys (corpTermCounts corpus)
     corpus = mkCorpus dic

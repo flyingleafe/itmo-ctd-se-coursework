@@ -11,7 +11,7 @@ import           Universum     hiding (show)
 
 -- | TODO: napihat' huyni
 data TMConfig = TMConfig
-    { tmDocFilePath :: FilePath
+    { tmDocFilePath :: !FilePath
     }
 
 deriveJSON defaultOptions ''TMConfig
