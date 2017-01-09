@@ -5,8 +5,9 @@
 {-# LANGUAGE TypeSynonymInstances  #-}
 
 module Model
-       ( ModelOutput
-       , Model (..)
+       ( Model (..)
+       , KMeansParams (..)
+       , ModelOutput
        ) where
 
 import qualified Data.Map as M

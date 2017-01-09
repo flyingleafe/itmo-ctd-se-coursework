@@ -3,6 +3,7 @@ const {ipcRenderer} = require('electron');
 function preload() {
     let paneContainer = document.getElementById('pane-container');
     let navs = document.querySelectorAll('.nav-group-item');
+    let fileform = document.getElementById('file-form');
     let filepicker = document.getElementById('filepicker');
     let filesTable = document.getElementById('files-table');
     let filesubmit = document.getElementById('file-submit');
@@ -22,7 +23,6 @@ function preload() {
 
     filepicker.addEventListener('change', function (event) {
         let files = event.target.files;
-        console.log(files);
 
         if (files.length == 0) {
             filesTable.classList.add('hidden');
@@ -41,6 +41,14 @@ function preload() {
             filesTable.classList.remove('hidden');
             filesubmit.removeAttribute('disabled');
         }
+    }, false);
+
+    fileform.addEventListener('submit', function (event) {
+        event.preventDefault();
+        let file = filepicker.files[0];
+        ipcRenderer.send('fileform-channel', {
+            "tmDocFilePath": file.path
+        });
     }, false);
 }
 
