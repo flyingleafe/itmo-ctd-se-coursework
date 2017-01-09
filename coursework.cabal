@@ -21,10 +21,12 @@ library
                      , Types
                      , Config
                      , OutputSink
+                     , Runner
                      , Web.Api
                      , Web.Server
                      , Web.Types
   build-depends:       aeson
+                     , lens
                      , base >= 4.7 && < 5
                      , vector-sized >= 0.4.1.0
                      , data-default

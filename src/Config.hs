@@ -4,21 +4,14 @@ module Config
        ( TMConfig (..)
        ) where
 
-import           Data.Aeson                (FromJSON (..), ToJSON (..))
-import           Data.Aeson.TH             (defaultOptions, deriveJSON)
-import           Filesystem.Path.CurrentOS (FilePath)
-import           Prelude                   (show)
-import           Universum                 hiding (FilePath, show)
+import           Data.Aeson    (FromJSON (..), ToJSON (..))
+import           Data.Aeson.TH (defaultOptions, deriveJSON)
+import           Prelude       (show)
+import           Universum     hiding (show)
 
 -- | TODO: napihat' huyni
 data TMConfig = TMConfig
     { tmDocFilePath :: FilePath
     }
-
-instance FromJSON FilePath where
-    parseJSON = fmap fromString . parseJSON
-
-instance ToJSON FilePath where
-    toJSON = toJSON . show
 
 deriveJSON defaultOptions ''TMConfig

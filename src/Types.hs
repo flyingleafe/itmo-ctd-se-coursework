@@ -2,19 +2,25 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
 
 module Types
        ( TVarStateT (..)
        , Base
        , TMError
        , AppState (..)
+
        , ProcessData (..)
+       , appState
+       , metrics
+
        , WorkMode
        , runBase
        , runBaseRaw
        ) where
 
 import           Control.Concurrent.STM    (TVar, newTVar, readTVar, writeTVar)
+import           Control.Lens              (makeLenses)
 import           Control.Monad.Except      (ExceptT, MonadError, runExceptT)
 import           Control.Monad.Reader      (ReaderT, ask, runReaderT)
 import           Control.Monad.State       (MonadState (..))
@@ -40,15 +46,18 @@ instance MonadIO m => MonadState s (TVarStateT s m) where
 data AppState = Await
               | Processing
               | Ready
+              deriving (Eq, Show)
 
 instance Default AppState where
     def = Await
 
 -- | Application processing data
 data ProcessData = ProcessData
-    { appState :: AppState
-    , metrics  :: [[Double]]
-    }
+    { _appState :: AppState
+    , _metrics  :: [[Double]]
+    } deriving (Eq, Show)
+
+makeLenses ''ProcessData
 
 instance Default ProcessData where
     def = ProcessData def []

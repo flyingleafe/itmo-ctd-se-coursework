@@ -10,6 +10,7 @@ import           Universum
 import           DocSource
 import           Model
 import           OutputSink
+import           Runner
 import           Types
 import           Web.Server          (webServer)
 
@@ -39,9 +40,6 @@ serveOpts = ServerMode <$>
 appModeInfo :: ParserInfo AppMode
 appModeInfo = info (helper <*> appModeParser) $
     fullDesc `mappend` progDesc "Server part of document-clustering application"
-
-pipeline :: FilePath -> Base ()
-pipeline = runTDSource >=> runModel @Base @KMeansParams 2 >=> runMockSink . snd
 
 main :: IO ()
 main = do

@@ -13,22 +13,23 @@ module Web.Server
        ) where
 
 import           Control.Concurrent.STM               (TVar)
-import           Control.Exception                    (ioError)
+import           Control.Lens                         (use, (.=))
 import qualified Control.Monad.Catch                  as Catch
 import           Control.Monad.Except                 (MonadError (throwError))
 import           Control.Monad.State                  (get)
-import           Formatting                           (int, sformat, (%))
+import           Formatting                           (int, sformat, stext, (%))
 import           Network.Wai                          (Application)
 import           Network.Wai.Handler.Warp             (run)
 import           Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import           Servant.API                          ((:<|>) ((:<|>)), FromHttpApiData)
 import           Servant.Server                       (Handler, ServantErr (errBody),
-                                                       Server, ServerT, err404, serve)
+                                                       Server, ServerT, err404, err500,
+                                                       serve)
 import           Servant.Utils.Enter                  ((:~>) (Nat), enter)
-import           System.IO.Error                      (userError)
 import           Universum
 
 import           Config                               (TMConfig (..))
+import           Runner                               (fork_, pipeline)
 import           Types
 import           Web.Api                              (AppApi, appApi)
 import           Web.Types                            ()
@@ -39,8 +40,8 @@ serveImpl application port =
     liftIO . run (fromIntegral port) . logStdoutDev =<< application
 
 -- | Get the application
-webApp :: WorkMode m => m (m :~> Handler) -> m Application
-webApp nat = flip enter apiHandlers <$> nat >>= return . serve appApi
+webApp :: Base (Base :~> Handler) -> Base Application
+webApp nat = serve appApi . flip enter apiHandlers <$> nat
 
 -- | Run the whole thing
 webServer :: Word16 -> Base ()
@@ -52,16 +53,19 @@ webServer port = do
 -- Handler transformation
 -----------------------------------------------------------------------
 
-toIOError :: IO (Either TMError a) -> IO a
-toIOError action =
-    action >>= either (ioError . userError . toString) return
+setBody :: ServantErr -> Text -> ServantErr
+setBody err txt = err { errBody = encodeUtf8 txt }
+
+toServantHandler :: IO (Either TMError a) -> Handler a
+toServantHandler action = lift action >>= either throwErr return
+  where throwErr = throwError . setBody err500
 
 convertHandler
     :: forall a. TVar ProcessData
     -> Base a
     -> Handler a
-convertHandler tv handler = do
-    liftIO (toIOError . runBaseRaw tv $ handler)
+convertHandler tv handler =
+    toServantHandler (runBaseRaw tv handler)
     `Catch.catches`
     excHandlers
   where
@@ -77,8 +81,18 @@ nat = do
 -- Handlers
 -----------------------------------------------------------------------
 
-apiHandlers :: WorkMode m => ServerT AppApi m
+apiHandlers :: ServerT AppApi Base
 apiHandlers = initialize :<|> get
 
-initialize :: WorkMode m => TMConfig -> m ()
-initialize TMConfig{..} = pure ()
+initialize :: TMConfig -> Base ()
+initialize TMConfig{..} = do
+    as <- use appState
+    when (as /= Await) $
+        throwError "Server state is not `Await` now"
+    appState .= Processing
+    -- | Start working thread
+    fork_ $ pipeline tmDocFilePath
+
+-----------------------------------------------------------------------
+-- Helpers
+-----------------------------------------------------------------------

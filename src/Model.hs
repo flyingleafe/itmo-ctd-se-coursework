@@ -10,13 +10,14 @@ module Model
        , ModelOutput
        ) where
 
-import qualified Data.Map as M
-import           Control.Concurrent.STM.TVar (writeTVar, readTVar)
+import           Control.Concurrent.STM.TVar (readTVar, writeTVar)
+import           Control.Monad.State         (MonadState (..))
+import           Control.Monad.State         (get, put)
+import qualified Data.Map                    as M
 import           Universum
-import Control.Monad.State (get, put)
 
 import           Config
-import           DocSource (TfIdfCollection)
+import           DocSource                   (TfIdfCollection)
 import           Types
 
 type ModelOutput = [Int]
