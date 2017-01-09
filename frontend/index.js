@@ -1,6 +1,8 @@
 'use strict';
 const electron = require('electron');
 const app = electron.app;
+const ipcMain = electron.ipcMain;
+const api = require('./src/api');
 
 // adds debug features like hotkeys for triggering dev tools and reload
 require('electron-debug')();
@@ -40,4 +42,15 @@ app.on('activate', () => {
 
 app.on('ready', () => {
 	  mainWindow = createMainWindow();
+});
+
+// processing ipc
+ipcMain.on('fileform-channel', (e, config) => {
+    api.initialize(config)
+        .then(function (data) {
+            console.log(data);
+        })
+        .catch(function (err) {
+            console.log(err);
+        });
 });
