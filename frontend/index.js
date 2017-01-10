@@ -45,10 +45,6 @@ app.on('ready', () => {
 });
 
 // processing ipc
-function startChartProcessing () {
-    ipcMain.send
-}
-
 ipcMain.on('fileform-channel', (e, config) => {
     api.initialize(config)
         .then(function (data) {
@@ -56,6 +52,17 @@ ipcMain.on('fileform-channel', (e, config) => {
             e.sender.send('chart-initialize');
         })
         .catch(function (errData) {
+            console.log(errData.error);
+        });
+});
+
+ipcMain.on('chart-channel', (e) => {
+    api.getState()
+        .then(function (data) {
+            console.log(data);
+            e.sender.send('chart-reply', data);
+        })
+        .catch(function (errDara) {
             console.log(errData.error);
         });
 });

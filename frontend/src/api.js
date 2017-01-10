@@ -12,5 +12,8 @@ exports.initialize = function (config) {
 };
 
 exports.getState = function () {
-    return rp.get(baseUri + '/get_state');
+    return rp.get({
+        uri: baseUri + '/get_state',
+        json: true
+    });
 };

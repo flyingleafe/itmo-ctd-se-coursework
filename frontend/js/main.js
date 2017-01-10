@@ -1,5 +1,5 @@
 const {ipcRenderer} = require('electron');
-const Plotly = require('plotly.js');
+// const Plotly = require('plotly.js');
 
 function preload() {
     let paneContainer = document.getElementById('pane-container');
@@ -63,34 +63,37 @@ function preload() {
         queryChartData();
     });
 
-    ipcRenderer.on('chart-reply', function (data) {
-        let metrics = data._metrics.reverse();
+    ipcRenderer.on('chart-reply', function (e, data) {
+        let metrics = data['_metrics'].reverse();
         if (metrics.length > 0) {
             if (chartData == null) {
+                plotly.innerHTML = '';
                 chartData = [];
                 for (let i = 0; i < metrics[0].length; i++) {
                     chartData.push({x: [], y: [], type: 'scatter'});
                 }
                 Plotly.newPlot('plotly', chartData);
-            } else {
-                for (let i = chartLength; i < metrics.length; i++) {
-                    for (let j = 0; j < metrics[i].length; j++) {
-                        chartData[j].x.push(i);
-                        chartData[j].y.push(metrics[i][j]);
-                    }
-                }
-                Plotly.redraw('plotly');
             }
+
+            for (let i = chartLength; i < metrics.length; i++) {
+                for (let j = 0; j < metrics[i].length; j++) {
+                    chartData[j].x.push(i);
+                    chartData[j].y.push(metrics[i][j]);
+                }
+            }
+            Plotly.redraw('plotly');
+            chartLength = metrics.length;
+            console.log(chartData);
         }
-        
-        let state = data._appState;
+
+        let state = data['_appState'];
         if (state == "Processing") {
             setTimeout(queryChartData, chartUpdateInterval);
         }
     });
 
     function queryChartData() {
-        ipcRendered.send('chart-channel');
+        ipcRenderer.send('chart-channel');
     }
 }
 
