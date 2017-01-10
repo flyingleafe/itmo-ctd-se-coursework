@@ -6,6 +6,6 @@ in
      name = "coursework";
      ghc = hsPkgs.ghc;
      buildInputs =
-       [ zlib glib blas git ];
+       [ zlib glib git cabal-install autoreconfHook stack ];
      LANG = "en_US.UTF-8";
   }

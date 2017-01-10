@@ -49,8 +49,20 @@ ipcMain.on('fileform-channel', (e, config) => {
     api.initialize(config)
         .then(function (data) {
             console.log(data);
+            e.sender.send('chart-initialize');
         })
-        .catch(function (err) {
-            console.log(err);
+        .catch(function (errData) {
+            console.log(errData.error);
+        });
+});
+
+ipcMain.on('chart-channel', (e) => {
+    api.getState()
+        .then(function (data) {
+            console.log(data);
+            e.sender.send('chart-reply', data);
+        })
+        .catch(function (errDara) {
+            console.log(errData.error);
         });
 });

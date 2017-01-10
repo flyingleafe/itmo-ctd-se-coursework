@@ -94,10 +94,7 @@ initialize TMConfig{..} = do
     fork_ $ pipeline tmDocFilePath
 
 getState :: Base ProcessData
-getState = do
-    pd <- get
-    traceShowM $ pd ^. appState
-    return pd
+getState = get
 
 -----------------------------------------------------------------------
 -- Helpers
