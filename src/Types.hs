@@ -13,6 +13,7 @@ module Types
        , ProcessData (..)
        , appState
        , metrics
+       , labels
 
        , WorkMode
        , runBase
@@ -57,12 +58,13 @@ instance Default AppState where
 data ProcessData = ProcessData
     { _appState :: !AppState
     , _metrics  :: ![[Double]]
+    , _labels   :: [Text]
     } deriving (Eq, Show)
 
 makeLenses ''ProcessData
 
 instance Default ProcessData where
-    def = ProcessData def []
+    def = ProcessData def [] []
 
 type TMError = Text
 type Base = TVarStateT ProcessData (ExceptT TMError IO)

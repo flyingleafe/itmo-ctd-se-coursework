@@ -101,7 +101,6 @@ instance Model Base KMeansParams where
         return $ KMeans centroids mx cosine
     buildModel p@KMeans{..} = do
         liftIO $ print $ maximum dists
-        --liftIO $ print $ map (\p -> map (metric p) centroids) points
         liftIO $ print clusters
         let !p1 = innerClusterDist metric clusters centroids points
         let !p2 = outerCentersDist metric centroids
