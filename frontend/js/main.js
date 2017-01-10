@@ -79,6 +79,10 @@ function preload() {
     let chartLength = 0;
     let chartData;
     let chartUpdateInterval = 2000;
+    let chartLayout = {
+        title: 'Model metrics'
+    };
+    let metricsNames = ['Mean in-cluster distance', 'Mean distance between clusters'];
 
     ipcRenderer.on('chart-initialize', function() {
         plotly.innerHTML = 'Waiting for data...';
@@ -86,15 +90,20 @@ function preload() {
     });
 
     ipcRenderer.on('chart-reply', function (e, data) {
-        let metrics = data['_metrics'].reverse();
+        let metrics = data._metrics.reverse();
         if (metrics.length > 0) {
             if (chartData == null) {
                 plotly.innerHTML = '';
                 chartData = [];
-                for (let i = 0; i < metrics[0].length; i++) {
-                    chartData.push({x: [], y: [], type: 'scatter'});
+                for (let i = 0; i < 2; i++) {
+                    chartData.push({
+                        x: [],
+                        y: [],
+                        type: 'scatter',
+                        name: metricsNames[i]
+                    });
                 }
-                Plotly.newPlot('plotly', chartData);
+                Plotly.newPlot('plotly', chartData, chartLayout);
             }
 
             for (let i = chartLength; i < metrics.length; i++) {
@@ -108,7 +117,7 @@ function preload() {
             console.log(chartData);
         }
 
-        let state = data['_appState'];
+        let state = data._appState;
         if (state == "Processing") {
             setTimeout(queryChartData, chartUpdateInterval);
         }
