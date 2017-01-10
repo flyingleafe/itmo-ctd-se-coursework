@@ -6,7 +6,8 @@ module Web.Types
 
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 
-import           Types         (AppState (..), ProcessData (..))
+import           Types         (AppState (..), KMeansParams (..), ProcessData (..))
 
+deriveJSON defaultOptions ''KMeansParams
 deriveJSON defaultOptions ''AppState
 deriveJSON defaultOptions ''ProcessData

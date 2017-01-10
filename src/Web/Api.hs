@@ -19,6 +19,8 @@ type AppApi =
     "initialize" :> ReqBody '[JSON] TMConfig :> Post '[JSON] ()
     :<|>
     "get_state" :> Get '[JSON] ProcessData
+    :<|>
+    "predict" :> ReqBody '[JSON] TMConfig :> Post '[JSON] [Double]
 
 appApi :: Proxy AppApi
 appApi = Proxy

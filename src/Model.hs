@@ -10,17 +10,19 @@ module Model
        , KMeansParams (..)
        , ModelOutput
        , runKMeansModel
+       , kMeansPredict
        ) where
 
 import           Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import           Control.Lens                (use, (%=))
+import           Control.Monad.Except        (MonadError, throwError)
 import           Control.Monad.State         (MonadState (..))
 import qualified Data.Map                    as M
 import           System.Random.Shuffle       (shuffleM)
 import           Universum
 
 import           Config
-import           DocSource                   (DocumentsInfo (..), TfIdfCollection)
+import           DocSource                   (DocumentsInfo (..))
 import           Types
 
 type ModelOutput = [Int]
@@ -36,8 +38,6 @@ class Monad m => Model m p where
     runModel :: DocumentsInfo -> m (p, ModelOutput)
     runModel = prepareParams >=> buildModel
 
-type Point = [Double]
-
 -- | Vector norm.
 norm :: Point -> Double
 norm = sqrt . foldl' acc 0
@@ -47,14 +47,14 @@ norm = sqrt . foldl' acc 0
 dotProd :: Point -> Point -> Double
 dotProd vec1 vec2 = foldl' (+) 0 $ zipWith (*) vec1 vec2
 
--- | Cosine metric function.
+-- | Cosine cosine function.
 cosine :: Point -> Point -> Double
 cosine vec1 vec2 =
     let dp = dotProd vec1 vec2
         mag = norm vec1 * norm vec2
     in 1 - dp / mag
 
--- | Euclidian metric function.
+-- | Euclidian cosine function.
 dist :: Point -> Point -> Double
 dist a b = sqrt $ sum $ map (^2) $ zipWith (-) a b
 
@@ -78,19 +78,13 @@ clusterize r centroids = map assignPoint
   where
     assignPoint p = snd $ minimumBy (comparing (r p . fst)) (zip centroids [1..])
 
--- | K-Means model intermediate parameters.
-data KMeansParams = KMeans { centroids :: ![Point]
-                           , points    :: !TfIdfCollection
-                           , metric    :: Point -> Point -> Double
-                           }
-
--- | Inner cluster distance quality metric.
+-- | Inner cluster distance quality cosine.
 innerClusterDist :: (Point -> Point -> Double) -> [Int] -> [Point] -> [Point] -> Double
 innerClusterDist r ys centrs pts =
     sum $ map (\(y, c, p) -> r c p ** 2 / fromIntegral (cnt y)) (zip3 ys centrs pts)
   where cnt y = length $ filter (y ==) ys
 
--- | outer cluster (centroids) distance quality metric.
+-- | outer cluster (centroids) distance quality cosine.
 outerCentersDist :: (Point -> Point -> Double) -> [Point] -> Double
 outerCentersDist r centrs = coeff * sum (concatMap (\x -> map (r x) centrs) centrs)
   where n = length centrs
@@ -98,31 +92,39 @@ outerCentersDist r centrs = coeff * sum (concatMap (\x -> map (r x) centrs) cent
 
 newtype KMeansModel a = KMeansModel
     { getKMeansModel :: Base a
-    } deriving (Functor, Applicative, Monad, MonadIO, MonadState ProcessData)
+    } deriving (Functor, Applicative, Monad, MonadIO,
+                MonadState ProcessData, MonadError TMError)
 
 -- | K-Means model implementation.
 instance Model KMeansModel KMeansParams where
     prepareParams DocumentsInfo {..} = do
         -- TODO: check if they're not equal
         centroids <- take diNClusters <$> liftIO (shuffleM diCollection)
-        return $ KMeans centroids diCollection cosine
+        return $ KMeans centroids diCollection
     buildModel p@KMeans{..} = do
         liftIO $ print $ maximum dists
         liftIO $ print clusters
-        let !p1 = innerClusterDist metric clusters centroids points
-        let !p2 = outerCentersDist metric centroids
+        let !p1 = innerClusterDist cosine clusters centroids points
+        let !p2 = outerCentersDist cosine centroids
         metrics %= ([p1, p2] :)
         if converged
             then return (p, clusters)
-            else buildModel $ KMeans (M.keys newCentroidsMap) points metric
+            else buildModel $ KMeans (M.keys newCentroidsMap) points
           where
             converged = maximum dists < 0.00001
-            dists = zipWith metric (sort centroids) (M.keys newCentroidsMap)
-            newCentroidsMap = relocate (assign metric centroids points)
-            clusters = clusterize metric centroids points
+            dists = zipWith cosine (sort centroids) (M.keys newCentroidsMap)
+            newCentroidsMap = relocate (assign cosine centroids points)
+            clusters = clusterize cosine centroids points
     predictModel KMeans{..} = return . map scorer
       where
-        scorer point = map (metric point) centroids
+        scorer point = map (cosine point) centroids
 
 runKMeansModel :: DocumentsInfo -> Base (KMeansParams, ModelOutput)
 runKMeansModel = getKMeansModel . runModel
+
+kMeansPredict :: TfIdfCollection -> Base [[Double]]
+kMeansPredict tc = getKMeansModel $ do
+    st <- use appState
+    case st of
+        Ready ps -> predictModel ps tc
+        _        -> throwError "Model is not ready yet"

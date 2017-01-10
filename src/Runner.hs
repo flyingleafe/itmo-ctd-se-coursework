@@ -4,7 +4,8 @@
 module Runner
        ( MonadFork (..)
        , fork_
-       , pipeline
+       , fitPipeline
+       , predictPipeline
        ) where
 
 import           Control.Concurrent   (ThreadId, forkIO)
@@ -73,5 +74,8 @@ type instance TId (TVarStateT r m) = TId m
 -- Runners
 -------------------------------------------------------------------------------
 
-pipeline :: FilePath -> Base ()
-pipeline = runTDSource >=> runKMeansModel >=> runMockSink . snd
+fitPipeline :: FilePath -> Base ()
+fitPipeline = runTDSource >=> runKMeansModel >=> runMockSink
+
+predictPipeline :: FilePath -> Base [[Double]]
+predictPipeline = runTDSource >=> kMeansPredict . diCollection

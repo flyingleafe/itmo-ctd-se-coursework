@@ -8,8 +8,12 @@ module Types
        ( TVarStateT (..)
        , Base
        , TMError
-       , AppState (..)
+       , Point
+       , DocCollection
+       , TfIdfCollection
+       , KMeansParams (..)
 
+       , AppState (..)
        , ProcessData (..)
        , appState
        , metrics
@@ -45,10 +49,20 @@ instance MonadIO m => MonadState s (TVarStateT s m) where
                 writeTVar tv s'
                 return a
 
+type Point = [Double]
+type DocCollection = [[Text]]
+type TfIdfCollection = [[Double]]
+
+-- | K-Means model intermediate parameters.
+data KMeansParams = KMeans
+    { centroids :: ![Point]
+    , points    :: !TfIdfCollection
+    } deriving (Eq, Show)
+
 -- | Application state marker
 data AppState = Await
               | Processing
-              | Ready
+              | Ready KMeansParams
               deriving (Eq, Show)
 
 instance Default AppState where

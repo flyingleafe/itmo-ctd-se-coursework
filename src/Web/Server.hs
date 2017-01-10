@@ -17,6 +17,7 @@ import           Control.Lens                         (use, (.=), (^.))
 import qualified Control.Monad.Catch                  as Catch
 import           Control.Monad.Except                 (MonadError (throwError))
 import           Control.Monad.State                  (get)
+import           Data.List                            (head)
 import           Formatting                           (int, sformat, stext, (%))
 import           Network.Wai                          (Application)
 import           Network.Wai.Handler.Warp             (run)
@@ -26,10 +27,11 @@ import           Servant.Server                       (Handler, ServantErr (errB
                                                        Server, ServerT, err404, err500,
                                                        serve)
 import           Servant.Utils.Enter                  ((:~>) (Nat), enter)
-import           Universum
+import           Universum                            hiding (head)
 
 import           Config                               (TMConfig (..))
-import           Runner                               (fork_, pipeline)
+import           Runner                               (fitPipeline, fork_,
+                                                       predictPipeline)
 import           Types
 import           Web.Api                              (AppApi, appApi)
 import           Web.Types                            ()
@@ -82,7 +84,7 @@ nat = do
 -----------------------------------------------------------------------
 
 apiHandlers :: ServerT AppApi Base
-apiHandlers = initialize :<|> getState
+apiHandlers = initialize :<|> getState :<|> predict
 
 initialize :: TMConfig -> Base ()
 initialize TMConfig{..} = do
@@ -91,10 +93,13 @@ initialize TMConfig{..} = do
         throwError "Server state is not `Await` now"
     appState .= Processing
     -- | Start working thread
-    fork_ $ pipeline tmDocFilePath
+    fork_ $ fitPipeline tmDocFilePath
 
 getState :: Base ProcessData
 getState = get
+
+predict :: TMConfig -> Base [Double]
+predict TMConfig{..} = head <$> predictPipeline tmDocFilePath
 
 -----------------------------------------------------------------------
 -- Helpers

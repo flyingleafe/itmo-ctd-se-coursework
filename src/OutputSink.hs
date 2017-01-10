@@ -17,7 +17,5 @@ newtype MockSink a = MockSink
     } deriving (Functor, Applicative, Monad, MonadIO,
                 MonadError TMError, MonadState ProcessData)
 
-runMockSink :: ModelOutput -> Base ()
-runMockSink mo = getMockSink $ do
-    liftIO $ print mo
-    appState .= Ready
+runMockSink :: (KMeansParams, ModelOutput) -> Base ()
+runMockSink (p, mo) = getMockSink $ appState .= Ready p

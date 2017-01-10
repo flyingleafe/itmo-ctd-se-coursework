@@ -24,9 +24,6 @@ newtype TextDirectorySource a = TDSource
     { getTDSource :: Base a
     } deriving (Functor, Applicative, Monad, MonadIO, MonadState ProcessData)
 
-type DocCollection = [[Text]]
-type TfIdfCollection = [[Double]]
-
 data DocumentsInfo = DocumentsInfo
     { diNClusters  :: Int
     , diCollection :: TfIdfCollection
