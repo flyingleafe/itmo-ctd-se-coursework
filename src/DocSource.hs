@@ -3,6 +3,7 @@
 module DocSource
        ( runTDSource
        , TfIdfCollection
+       , DocumentsInfo (..)
        ) where
 
 import           Control.Lens             ((.=))
@@ -26,15 +27,21 @@ newtype TextDirectorySource a = TDSource
 type DocCollection = [[Text]]
 type TfIdfCollection = [[Double]]
 
+data DocumentsInfo = DocumentsInfo
+    { diNClusters  :: Int
+    , diCollection :: TfIdfCollection
+    }
+
 preprocess :: Text -> [Text]
 preprocess = words
 
-getTDCollection :: FilePath -> TextDirectorySource DocCollection
-getTDCollection = fmap (map preprocess) . (mapM readFile =<<) . (lbls =<<) . liftIO . getDirRec
+getTDCollection :: FilePath -> TextDirectorySource (Int, DocCollection)
+getTDCollection fp = do
+    files <- liftIO $ getDirRec fp
+    let lbs = ordNub $ map (pack . takeFileName . takeDirectory) files
+    labels .= lbs
+    (,) (length lbs) <$> mapM (fmap preprocess . readFile) files
   where
-    lbls w = do
-        labels .= ordNub (map (pack . takeFileName . takeDirectory) w)
-        return w
     getDirRec fp = do
         isDir <- doesDirectoryExist fp
         if isDir
@@ -50,5 +57,9 @@ tfIdfVectorize dic = map docVectorize dic
     corpus = Corpus (corpLength cnf) (M.filter thresh (corpTermCounts cnf))
     cnf = mkCorpus dic
 
-runTDSource :: FilePath -> Base TfIdfCollection
-runTDSource = fmap tfIdfVectorize . getTDSource . getTDCollection
+runTDSource :: FilePath -> Base DocumentsInfo
+runTDSource fp = getTDSource $ do-- fmap tfIdfVectorize . getTDSource . getTDCollection
+    (diNClusters, dc) <- getTDCollection fp
+    let diCollection = tfIdfVectorize dc
+    return DocumentsInfo {..}
+

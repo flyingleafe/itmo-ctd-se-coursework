@@ -9,6 +9,7 @@ module Model
        ( Model (..)
        , KMeansParams (..)
        , ModelOutput
+       , runKMeansModel
        ) where
 
 import           Control.Concurrent.STM.TVar (readTVar, writeTVar)
@@ -19,21 +20,21 @@ import           System.Random.Shuffle       (shuffleM)
 import           Universum
 
 import           Config
-import           DocSource                   (TfIdfCollection)
+import           DocSource                   (DocumentsInfo (..), TfIdfCollection)
 import           Types
 
 type ModelOutput = [Int]
 
 -- | Typeclass for clustering models.
 class Monad m => Model m p where
-    prepareParams :: Int -> TfIdfCollection -> m p
+    prepareParams :: DocumentsInfo -> m p
 
     buildModel :: p -> m (p, ModelOutput)
 
     predictModel :: p -> TfIdfCollection -> m [[Double]]
 
-    runModel :: Int -> TfIdfCollection -> m (p, ModelOutput)
-    runModel nClusters = prepareParams nClusters >=> buildModel
+    runModel :: DocumentsInfo -> m (p, ModelOutput)
+    runModel = prepareParams >=> buildModel
 
 type Point = [Double]
 
@@ -95,12 +96,16 @@ outerCentersDist r centrs = coeff * sum (concatMap (\x -> map (r x) centrs) cent
   where n = length centrs
         coeff = 2 / fromIntegral n / fromIntegral (n - 1)
 
+newtype KMeansModel a = KMeansModel
+    { getKMeansModel :: Base a
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadState ProcessData)
+
 -- | K-Means model implementation.
-instance Model Base KMeansParams where
-    prepareParams nClusters mx = do
+instance Model KMeansModel KMeansParams where
+    prepareParams DocumentsInfo {..} = do
         -- TODO: check if they're not equal
-        centroids <- take nClusters <$> liftIO (shuffleM mx)
-        return $ KMeans centroids mx cosine
+        centroids <- take diNClusters <$> liftIO (shuffleM diCollection)
+        return $ KMeans centroids diCollection cosine
     buildModel p@KMeans{..} = do
         liftIO $ print $ maximum dists
         liftIO $ print clusters
@@ -115,5 +120,9 @@ instance Model Base KMeansParams where
             dists = zipWith metric (sort centroids) (M.keys newCentroidsMap)
             newCentroidsMap = relocate (assign metric centroids points)
             clusters = clusterize metric centroids points
-    predictModel KMeans{..} = return . map scorer where
+    predictModel KMeans{..} = return . map scorer
+      where
         scorer point = map (metric point) centroids
+
+runKMeansModel :: DocumentsInfo -> Base (KMeansParams, ModelOutput)
+runKMeansModel = getKMeansModel . runModel

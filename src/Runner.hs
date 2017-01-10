@@ -74,4 +74,4 @@ type instance TId (TVarStateT r m) = TId m
 -------------------------------------------------------------------------------
 
 pipeline :: FilePath -> Base ()
-pipeline = runTDSource >=> runModel @Base @KMeansParams 3 >=> runMockSink . snd
+pipeline = runTDSource >=> runKMeansModel >=> runMockSink . snd
