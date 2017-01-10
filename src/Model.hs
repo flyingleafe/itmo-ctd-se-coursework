@@ -30,6 +30,8 @@ class Monad m => Model m p where
 
     buildModel :: p -> m (p, ModelOutput)
 
+    predictModel :: p -> TfIdfCollection -> m [[Double]]
+
     runModel :: Int -> TfIdfCollection -> m (p, ModelOutput)
     runModel nClusters = prepareParams nClusters >=> buildModel
 
@@ -113,3 +115,5 @@ instance Model Base KMeansParams where
             dists = zipWith metric (sort centroids) (M.keys newCentroidsMap)
             newCentroidsMap = relocate (assign metric centroids points)
             clusters = clusterize metric centroids points
+    predictModel KMeans{..} = return . map scorer where
+        scorer point = map (metric point) centroids
