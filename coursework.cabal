@@ -31,12 +31,13 @@ library
                      , vector-sized >= 0.4.1.0
                      , data-default
                      , exceptions >= 0.8
+                     , filepath
                      , formatting
                      , type-natural
                      , text
                      , transformers
                      , mtl
-                     , filepath
+                     , random-shuffle
                      , stm
                      , system-filepath
                      , system-fileio

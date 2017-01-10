@@ -8,7 +8,7 @@ import           Data.Map                 (keys)
 import           Data.Text                (pack, unpack)
 import           Formatting               (sformat, shown, (%))
 import           NLP.Similarity.VectorSim (mkDocument, tf_idf)
-import           NLP.Types                (Corpus (..), mkCorpus)
+import           NLP.Types                (Corpus (..), mkCorpus, termCounts)
 import           System.Directory         (doesDirectoryExist, listDirectory)
 import           System.FilePath          ((</>))
 import           Universum
@@ -38,7 +38,9 @@ getTDCollection = fmap (map preprocess) . (mapM readFile =<<) . liftIO . getDirR
 tfIdfVectorize :: DocCollection -> TfIdfCollection
 tfIdfVectorize dic = map docVectorize dic
   where
-    docVectorize doc = map (\w -> tf_idf w (mkDocument doc) corpus) terms
+    docVectorize doc = map (termVectorize doc) terms
+    termVectorize doc w = if thresh w then tf_idf w (mkDocument doc) corpus else 0
+    thresh w = termCounts corpus w > 10 && termCounts corpus w < 500
     terms = keys (corpTermCounts corpus)
     corpus = mkCorpus dic
 

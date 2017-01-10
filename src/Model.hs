@@ -15,6 +15,7 @@ import           Control.Concurrent.STM.TVar (readTVar, writeTVar)
 import           Control.Lens                (use, (%=))
 import           Control.Monad.State         (MonadState (..))
 import qualified Data.Map                    as M
+import           System.Random.Shuffle       (shuffleM)
 import           Universum
 
 import           Config
@@ -48,7 +49,7 @@ cosine :: Point -> Point -> Double
 cosine vec1 vec2 =
     let dp = dotProd vec1 vec2
         mag = norm vec1 * norm vec2
-    in dp / mag
+    in 1 - dp / mag
 
 -- | Euclidian metric function.
 dist :: Point -> Point -> Double
@@ -94,10 +95,14 @@ outerCentersDist r centrs = coeff * sum (concatMap (\x -> map (r x) centrs) cent
 
 -- | K-Means model implementation.
 instance Model Base KMeansParams where
-    prepareParams nClusters mx = return params
-      where
-        params = KMeans (take nClusters mx) mx cosine
+    prepareParams nClusters mx = do
+        -- TODO: check if they're not equal
+        centroids <- take nClusters <$> liftIO (shuffleM mx)
+        return $ KMeans centroids mx cosine
     buildModel p@KMeans{..} = do
+        liftIO $ print $ maximum dists
+        --liftIO $ print $ map (\p -> map (metric p) centroids) points
+        liftIO $ print clusters
         let !p1 = innerClusterDist metric clusters centroids points
         let !p2 = outerCentersDist metric centroids
         metrics %= ([p1, p2] :)
@@ -105,7 +110,7 @@ instance Model Base KMeansParams where
             then return (p, clusters)
             else buildModel $ KMeans (M.keys newCentroidsMap) points metric
           where
-            converged = all (< 0.00001) $
-                zipWith metric (sort centroids) (M.keys newCentroidsMap)
+            converged = maximum dists < 0.00001
+            dists = zipWith metric (sort centroids) (M.keys newCentroidsMap)
             newCentroidsMap = relocate (assign metric centroids points)
             clusters = clusterize metric centroids points
