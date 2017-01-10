@@ -33,7 +33,7 @@ getTDCollection :: FilePath -> TextDirectorySource DocCollection
 getTDCollection = fmap (map preprocess) . (mapM readFile =<<) . (lbls =<<) . liftIO . getDirRec
   where
     lbls w = do
-        labels .= map (pack . takeFileName . takeDirectory) w
+        labels .= ordNub (map (pack . takeFileName . takeDirectory) w)
         return w
     getDirRec fp = do
         isDir <- doesDirectoryExist fp
