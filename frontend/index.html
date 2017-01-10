@@ -5,9 +5,6 @@
 
         <!-- Stylesheets -->
         <link rel="stylesheet" href="css/photon.min.css">
-        <!-- JS -->
-        <script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-        <script type="text/javascript" src="js/main.js"></script>
         <style>
          .pane {
              padding: 10px;
@@ -32,12 +29,16 @@
                         <nav class="nav-group">
                             <h5 class="nav-group-title">Actions</h5>
                             <span class="nav-group-item active" id="menu-select-files">
-                                <span class="icon icon-light-up"></span>
+                                <span class="icon icon-folder"></span>
                                 Select files
                             </span>
                             <span class="nav-group-item" id="menu-graphs">
-                                <span class="icon icon-light-up"></span>
-                                Graphs
+                                <span class="icon icon-chart-line"></span>
+                                Charts
+                            </span>
+                            <span class="nav-group-item" id="menu-usage">
+                                <span class="icon icon-down-circled"></span>
+                                Model usage
                             </span>
                         </nav>
                     </div>
@@ -65,9 +66,24 @@
                         <div id="pane-graphs" class="hidden">
                             <div id="plotly" style="height: 400px">Start the model teaching to see the charts</div>
                         </div>
+                        <div id="pane-usage" class="hidden">
+                            <form id="usage-form">
+                                <div class="form-group">
+                                    <label for="file">Select file to determine its cluster</label>
+                                    <input id="usage-file" class="form-control" name="file" type="file" />
+                                </div>
+                                <div class="form-group">
+                                    <input id="usage-submit" type="submit" class="form-control" value="Run model" disabled />
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- JS -->
+        <script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
     </body>
 </html>

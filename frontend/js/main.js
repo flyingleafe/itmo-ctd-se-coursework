@@ -4,11 +4,16 @@ const {ipcRenderer} = require('electron');
 function preload() {
     let paneContainer = document.getElementById('pane-container');
     let navs = document.querySelectorAll('.nav-group-item');
+    
     let fileform = document.getElementById('file-form');
     let filepicker = document.getElementById('filepicker');
     let filesTable = document.getElementById('files-table');
     let filesubmit = document.getElementById('file-submit');
     let plotly = document.getElementById('plotly');
+
+    let usageForm = document.getElementById('usage-form');
+    let usagePicker = document.getElementById('usage-file');
+    let usageSubmit = document.getElementById('usage-submit');
 
     // Simple navigation
     for (var i = 0; i < navs.length; i++) {
@@ -23,6 +28,7 @@ function preload() {
         });
     }
 
+    // Dataset form logic
     filepicker.addEventListener('change', function (event) {
         let files = event.target.files;
 
@@ -51,6 +57,22 @@ function preload() {
         ipcRenderer.send('fileform-channel', {
             "tmDocFilePath": file.path
         });
+    }, false);
+
+    // Usage form logic
+    usagePicker.addEventListener('change', function (event) {
+        let files = event.target.files;
+
+        if (files.length == 0) {
+            usageSubmit.addAttribute('disabled', 'disabled');
+        } else {
+            usageSubmit.removeAttribute('disabled');
+        }
+    });
+
+    usageForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        
     }, false);
 
     // Ipc events from main process
